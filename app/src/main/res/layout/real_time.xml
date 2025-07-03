@@ -10,15 +10,41 @@
         android:layout_height="wrap_content" />
 
     <TextView
+        android:layout_marginTop="20dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="IP" />
+
+    <TextView
+        android:id="@+id/ip"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="50dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
         android:layout_marginTop="40dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="信号" />
+
+    <TextView
+        android:id="@+id/rssi"
+        android:layout_marginTop="40dp"
+        android:layout_marginStart="50dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:layout_marginTop="60dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="电量" />
 
     <TextView
         android:id="@+id/electricQuantity"
-        android:layout_marginTop="40dp"
-        android:layout_marginStart="100dp"
+        android:layout_marginTop="60dp"
+        android:layout_marginStart="50dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
