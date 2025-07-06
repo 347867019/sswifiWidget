@@ -5,9 +5,6 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.widget.RemoteViews
-import java.util.Calendar
-import java.text.SimpleDateFormat
-import java.util.Locale
 import android.content.Intent
 import android.widget.Toast
 import kotlinx.coroutines.GlobalScope
@@ -26,6 +23,7 @@ import org.json.JSONObject
 class RealTime : AppWidgetProvider() {
     companion object {
         const val ACTION_REFRESH = "com.oxjmo.sswifiwidget.REFRESH"
+        const val ACTION_SWITCH_SIM = "com.oxjmo.sswifiwidget.SWITCHSIM"
     }
 
     override fun onUpdate(
@@ -39,14 +37,6 @@ class RealTime : AppWidgetProvider() {
         }
     }
 
-    override fun onEnabled(context: Context) {
-        // Enter relevant functionality for when the first widget is created
-    }
-
-    override fun onDisabled(context: Context) {
-        // Enter relevant functionality for when the last widget is disabled
-    }
-
     private fun updateAppWidget(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -54,22 +44,13 @@ class RealTime : AppWidgetProvider() {
     ) {
         Toast.makeText(context, "等待刷新", Toast.LENGTH_SHORT).show()
         val views = RemoteViews(context.packageName, R.layout.real_time)
-        views.setTextViewText(R.id.ip, "--")
-        views.setTextViewText(R.id.rssi, "--dBm")
-        views.setTextViewText(R.id.electricQuantity, "--%")
-        appWidgetManager.updateAppWidget(appWidgetId, views)
-
-        val refreshIntent = Intent(context, RealTime::class.java).apply {
-            action = ACTION_REFRESH
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        val textViews = listOf(R.id.ip, R.id.rssi, R.id.electricQuantity, R.id.provider, R.id.networkMode)
+        for (viewId in textViews) {
+            views.setTextViewText(viewId, "--")
         }
-        val refreshPendingIntent = PendingIntent.getBroadcast(
-            context,
-            appWidgetId,
-            refreshIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        views.setOnClickPendingIntent(R.id.widget_refresh, refreshPendingIntent)
+        views.setOnClickPendingIntent(R.id.refresh, registerRefreshEvent(context, appWidgetId))
+        views.setOnClickPendingIntent(R.id.switchSIM, registerSwitchSIMEvent(context, appWidgetId))
+        appWidgetManager.updateAppWidget(appWidgetId, views)
 
         val timestamp = System.currentTimeMillis()
         GlobalScope.launch {
@@ -81,14 +62,40 @@ class RealTime : AppWidgetProvider() {
             val ip = homePageData.getString("lan_ip")
             val electricQuantity = statusData.getString("battery_percent")
             val rssi = statusData.getString("rssi")
+            val provider = getProvider(homePageData.getString("iccid"))
+            val networkMode = getNetworkMode(statusData.getString("sys_mode"))
             views.setTextViewText(R.id.ip, ip)
             views.setTextViewText(R.id.rssi, "${rssi}dBm")
             views.setTextViewText(R.id.electricQuantity, "$electricQuantity%")
-            val calendar = Calendar.getInstance()
-            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-            val currentTime = sdf.format(calendar.time)
-            views.setTextViewText(R.id.infoTitle, currentTime)
+            views.setTextViewText(R.id.provider, provider)
+            views.setTextViewText(R.id.networkMode, networkMode)
             appWidgetManager.updateAppWidget(appWidgetId, views)
+        }
+    }
+
+    private fun getProvider(iccid: String): String {
+        val chinaMobilePrefixes = listOf("898600", "898602", "898604", "898607", "898608", "898613")
+        val chinaUnicomPrefixes = listOf("898601", "898606", "898609")
+        val chinaTelecomPrefixes = listOf("898603", "898605", "898611")
+        val chinaBroadcastPrefixes = listOf("898615")
+        return when {
+            chinaMobilePrefixes.any { iccid.startsWith(it) } -> "中国移动"
+            chinaUnicomPrefixes.any { iccid.startsWith(it) } -> "中国联通"
+            chinaTelecomPrefixes.any { iccid.startsWith(it) } -> "中国电信"
+            chinaBroadcastPrefixes.any { iccid.startsWith(it) } -> "中国广电"
+            else -> ""
+        }
+    }
+
+    private fun getNetworkMode(mode: String): String {
+        val gsmMode = listOf("3")
+        val t3GMode = listOf("5", "15")
+        val t4GMode = listOf("17")
+        return when (mode) {
+            in gsmMode -> "GSM"
+            in t3GMode -> "3G"
+            in t4GMode -> "4G"
+            else -> ""
         }
     }
 
@@ -102,14 +109,35 @@ class RealTime : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        val action = intent.action
-        if (action == ACTION_REFRESH) {
-            val appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
-            if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                updateAppWidget(context, AppWidgetManager.getInstance(context), appWidgetId)
-            } else {
-                println("警告：appWidgetId 无效")
-            }
+        val appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
+        if (intent.action == ACTION_REFRESH && appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            updateAppWidget(context, AppWidgetManager.getInstance(context), appWidgetId)
         }
+    }
+
+    private fun registerRefreshEvent(context: Context, appWidgetId: Int): PendingIntent {
+        val intent = Intent(context, RealTime::class.java).apply {
+            action = ACTION_REFRESH
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            appWidgetId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun registerSwitchSIMEvent(context: Context, appWidgetId: Int): PendingIntent {
+        val intent = Intent(context, RealTime::class.java).apply {
+            action = ACTION_SWITCH_SIM
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            appWidgetId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
     }
 }
