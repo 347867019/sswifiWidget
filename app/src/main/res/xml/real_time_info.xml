@@ -5,7 +5,7 @@
     android:initialLayout="@layout/real_time"
     android:minWidth="80dp"
     android:minHeight="80dp"
-    android:previewImage="@drawable/example_appwidget_preview"
+    android:previewImage="@drawable/appwidget_preview"
     android:previewLayout="@layout/real_time"
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="1"
