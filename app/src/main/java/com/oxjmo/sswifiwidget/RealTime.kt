@@ -7,16 +7,19 @@ import android.content.Context
 import android.widget.RemoteViews
 import android.content.Intent
 import android.widget.Toast
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.FormBody
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
 /**
@@ -33,16 +36,16 @@ class RealTime : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        // There may be multiple widgets active, so update all of them
         for (appWidgetId in appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId)
+            updateAppWidget(context, appWidgetManager, appWidgetId, 200L)
         }
     }
 
     private fun updateAppWidget(
         context: Context,
         appWidgetManager: AppWidgetManager,
-        appWidgetId: Int
+        appWidgetId: Int,
+        timeMillis: Long
     ) {
         Toast.makeText(context, "等待刷新", Toast.LENGTH_SHORT).show()
         val views = RemoteViews(context.packageName, R.layout.real_time)
@@ -54,30 +57,31 @@ class RealTime : AppWidgetProvider() {
         views.setOnClickPendingIntent(R.id.switchSIM, registerSwitchSIMEvent(context, appWidgetId))
         appWidgetManager.updateAppWidget(appWidgetId, views)
 
+        fun setViewText(viewId: Int, charSequence: String) {
+            views.setTextViewText(viewId, if(charSequence.isEmpty()) "--" else charSequence)
+        }
         val timestamp = System.currentTimeMillis()
         GlobalScope.launch {
             try {
-                delay(200L)
+                delay(timeMillis)
                 val homePageData = request("http://192.168.1.1/xml_action.cgi?method=get&module=duster&file=json_homepage_info$timestamp".toHttpUrl())
                 val statusData = request("http://192.168.1.1/xml_action.cgi?method=get&module=duster&file=json_status_info$timestamp".toHttpUrl())
-    //            val simData = request("http://192.168.1.1/xml_action.cgi?method=get&module=duster&file=json_mss_support_info$timestamp".toHttpUrl())
-    //            println(simData)
                 val ip = homePageData.getString("lan_ip")
                 val electricQuantity = statusData.getString("battery_percent")
                 val rssi = statusData.getString("rssi")
                 val provider = getProviderByOuben(homePageData.getString("iccid"))
                 val networkMode = getNetworkModeByOuben(statusData.getString("sys_mode"))
-                views.setTextViewText(R.id.ip, ip)
-                views.setTextViewText(R.id.rssi, "${rssi}dBm")
-                views.setTextViewText(R.id.electricQuantity, "$electricQuantity%")
-                views.setTextViewText(R.id.provider, provider)
-                views.setTextViewText(R.id.networkMode, networkMode)
+                setViewText(R.id.ip, ip)
+                setViewText(R.id.rssi, "${rssi}dBm")
+                setViewText(R.id.electricQuantity, "$electricQuantity%")
+                setViewText(R.id.provider, provider)
+                setViewText(R.id.networkMode, networkMode)
                 appWidgetManager.updateAppWidget(appWidgetId, views)
             }catch (_: Exception) {}
         }
         GlobalScope.launch {
             try {
-                delay(200L)
+                delay(timeMillis)
                 val res = request("http://192.168.100.1/reqproc/proc_post".toHttpUrl(), "POST", FormBody.Builder()
                     .add("goformId", "LOGIN")
                     .add("password", "YWRtaW4=")
@@ -88,11 +92,11 @@ class RealTime : AppWidgetProvider() {
                 val rssi = data.getString("rssi")
                 val networkType = data.getString("network_type")
                 val electricQuantity = getBatteryByYingteng(data.getString("battery_pers"))
-                views.setTextViewText(R.id.ip, ip)
-                views.setTextViewText(R.id.rssi, "${rssi}dBm")
-                views.setTextViewText(R.id.electricQuantity, "$electricQuantity%")
-    //            views.setTextViewText(R.id.provider, provider)
-                views.setTextViewText(R.id.networkMode, networkType)
+                setViewText(R.id.ip, ip)
+                setViewText(R.id.rssi, "${rssi}dBm")
+                setViewText(R.id.electricQuantity, "$electricQuantity%")
+                setViewText(R.id.provider, "")
+                setViewText(R.id.networkMode, networkType)
                 appWidgetManager.updateAppWidget(appWidgetId, views)
             }catch (_: Exception) {}
         }
@@ -133,6 +137,49 @@ class RealTime : AppWidgetProvider() {
         return "1"
     }
 
+    data class SimInfo(
+        val simId: String,
+        val simImsi: String
+    )
+
+    private fun switchSim(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int
+    ) {
+        val timestamp = System.currentTimeMillis()
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val simData = request("http://192.168.1.1/xml_action.cgi?method=get&module=duster&file=json_mss_support_info$timestamp".toHttpUrl())
+                val currentSimId = simData.getString("current_sim_id")
+                val simListArray = simData.getJSONArray("sim_list")
+                val simList = mutableListOf<SimInfo>()
+                for(i in 0 until simListArray.length()) {
+                    val item = simListArray.getJSONObject(i)
+                    val simId = item.getString("sim_id")
+                    val simImsi = item.getString("sim_imsi")
+                    if(simImsi == "") continue
+                    simList.add(SimInfo(simId, simImsi))
+                }
+                val findSimIndex = simList.indexOfFirst { it.simId == currentSimId }
+                val nextSimIndex = if (findSimIndex + 1 >= simList.size){ 0 } else { findSimIndex + 1 }
+                println(nextSimIndex)
+                val result = request("http://192.168.1.1/xml_action.cgi?method=post&module=duster&file=json_mss_support_set$timestamp".toHttpUrl(), "POST", JSONObject().apply {
+                    put("sole_sim_id", nextSimIndex.toString())
+                    put("switch_mode", "1")
+                }.toString().toRequestBody("application/json".toMediaType()))
+                println("切换成功")
+                println(result)
+                launch(Dispatchers.Main) {
+                    Toast.makeText(context, "切换成功", Toast.LENGTH_SHORT).show()
+                    updateAppWidget(context, appWidgetManager, appWidgetId, 1000L)
+                }
+            }catch (error: Exception) {
+                println(error)
+            }
+        }
+    }
+
     private val client = OkHttpClient()
 
     private fun request(url: HttpUrl, method: String? = "GET", body: RequestBody? = null): JSONObject {
@@ -155,7 +202,10 @@ class RealTime : AppWidgetProvider() {
         super.onReceive(context, intent)
         val appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
         if (intent.action == ACTION_REFRESH && appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-            updateAppWidget(context, AppWidgetManager.getInstance(context), appWidgetId)
+            updateAppWidget(context, AppWidgetManager.getInstance(context), appWidgetId, 200L)
+        }
+        if (intent.action == ACTION_SWITCH_SIM && appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            switchSim(context, AppWidgetManager.getInstance(context), appWidgetId)
         }
     }
 
