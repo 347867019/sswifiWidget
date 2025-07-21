@@ -8,8 +8,6 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import org.json.JSONObject
-import org.xmlpull.v1.XmlPullParser
-import org.xmlpull.v1.XmlPullParserFactory
 
 class NetworkClient {
     private val client = OkHttpClient()
@@ -57,49 +55,6 @@ class NetworkClient {
         val response = executeRequest(url)
         if (response.isSuccessful) return response.header(key).toString()
         return ""
-    }
-
-    fun requestXML(
-        url: String,
-        method: String? = "GET",
-        body: RequestBody? = null,
-        headers: Headers? = emptyMap<String, String>().toHeaders()
-    ) {
-        val response = executeRequest(url, method, body, headers)
-        val xmlData = response.body?.string() ?: "Error: no data"
-        println(xmlData)
-        val xml = parseXml(xmlData)
-        println(xml)
-    }
-
-    private fun parseXml(xmlData: String) {
-        val factory = XmlPullParserFactory.newInstance()
-        val parser = factory.newPullParser()
-        parser.setInput(xmlData.reader())
-        var eventType = parser.eventType
-        var text = ""
-        var title = ""
-        while (eventType != XmlPullParser.END_DOCUMENT) {
-            val tagName = parser.name
-            when (eventType) {
-                XmlPullParser.START_TAG -> {
-                    // 开始标签
-                }
-                XmlPullParser.TEXT -> {
-                    text = parser.text
-                }
-                XmlPullParser.END_TAG -> {
-                    when (tagName) {
-                        "title" -> {
-                            title = text
-                            println("Found title: $title")
-                        }
-                        // 可以添加更多标签解析
-                    }
-                }
-            }
-            eventType = parser.next()
-        }
     }
 
 }
