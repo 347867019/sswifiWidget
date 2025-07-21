@@ -37,7 +37,7 @@ class OuBenDevice {
         }catch (_: Exception) {}
     }
 
-    suspend fun onSwitchSim(
+    fun onSwitchSim(
         callback: () -> Unit
     ) {
         val timestamp = System.currentTimeMillis()
@@ -61,10 +61,10 @@ class OuBenDevice {
                     put("sole_sim_id", nextSimIndex.toString())
                     put("switch_mode", "1")
                 }.toString().toRequestBody("application/json".toMediaType()))
-                println("切换成功")
                 println(result)
                 callback()
             }catch (error: Exception) {
+                println("切换成功")
                 println(error)
             }
         }

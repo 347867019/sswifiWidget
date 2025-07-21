@@ -6,8 +6,9 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.widget.RemoteViews
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
@@ -53,7 +54,6 @@ class RealTime : AppWidgetProvider() {
         val setViewText: (Int, String) -> Unit = { viewId, text ->
             views.setTextViewText(viewId, if (text.isEmpty()) "--" else text)
         }
-        val timestamp = System.currentTimeMillis()
         GlobalScope.launch {
             ouBenDevice.onRefresh(
                 timeMillis = timeMillis,
@@ -90,12 +90,15 @@ class RealTime : AppWidgetProvider() {
             updateAppWidget(context, AppWidgetManager.getInstance(context), appWidgetId, 200L)
         }
         if (intent.action == ACTION_SWITCH_SIM && appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-            GlobalScope.launch (Dispatchers.Main){
-                ouBenDevice.onSwitchSim {
+            val callback: () -> Unit = {
+                Handler(Looper.getMainLooper()).post {
                     Toast.makeText(context, "切换成功", Toast.LENGTH_SHORT).show()
                     updateAppWidget(context, AppWidgetManager.getInstance(context), appWidgetId, 200L)
                 }
             }
+            ouBenDevice.onSwitchSim(
+                callback = callback
+            )
         }
     }
 
