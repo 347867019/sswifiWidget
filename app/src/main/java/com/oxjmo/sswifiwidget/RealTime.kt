@@ -12,15 +12,21 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.FormBody
+import okhttp3.Headers
+import okhttp3.Headers.Companion.toHeaders
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
-import okhttp3.Response
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import kotlin.random.Random
+import java.math.BigInteger
+import java.security.MessageDigest
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
 
 /**
  * Implementation of App Widget functionality.
@@ -99,6 +105,46 @@ class RealTime : AppWidgetProvider() {
                 setViewText(R.id.networkMode, networkType)
                 appWidgetManager.updateAppWidget(appWidgetId, views)
             }catch (_: Exception) {}
+        }
+        GlobalScope.launch {
+            try {
+                val loginParamString = getRequestHeader("http://192.168.100.1/login.cgi?_=$timestamp".toHttpUrl(), "WWW-Authenticate")
+                val loginParamMap = loginParamString.replace("\"", "").replace(", ", " ").split(" ")
+                val loginParam = loginParamMap.map { it.split("=").getOrElse(1) { "" } }
+                val authRealm = loginParam.getOrNull(1) ?: ""
+                val nonce = loginParam.getOrNull(2) ?: ""
+                val authQop = loginParam.getOrNull(3) ?: ""
+                val username = "admin"
+                val password = "admin"
+                val rand = Random.nextInt(100001)
+                val date = System.currentTimeMillis()
+                val salt = "$rand$date"
+                val tmp = md5(salt)
+                val authCnonce = tmp.take(16)
+                val HA1 = md5("$username:$authRealm:$password")
+                val HA2 = md5("GET:/cgi/protected.cgi")
+                val digestRes = md5("$HA1:$nonce:00000001:$authCnonce:$authQop:$HA2")
+                val loginHeaders: Headers = mapOf(
+                    "Authorization" to "Digest username=\"$username\", realm=\"$authRealm\", nonce=\"$nonce\", uri=\"/cgi/xml_action.cgi\", response=\"$digestRes\", qop=$authQop, nc=00000002, cnonce=\"$authCnonce\""
+                ).toHeaders()
+                request(
+                    url = "http://192.168.100.1/login.cgi?Action=Digest&username=$username&realm=$authRealm&nonce=$nonce&response=$digestRes&qop=$authQop&cnonce=$authCnonce&temp=asr&_=$timestamp".toHttpUrl(),
+                    headers = loginHeaders,
+                    ignoreReturnType = true
+                )
+//                val getInfoHeaders: Headers = mapOf(
+//                    "Authorization" to "Digest username=\"admin\", realm=\"Highwmg\", nonce=\"784440\", uri=\"/cgi/xml_action.cgi\", response=\"a67cb307d1c596630e1b91ea3252a4d9\", qop=auth, nc=00000004, cnonce=\"1db12b2adba0a934\""
+//                ).toHeaders()
+                println("登录成功")
+                requestXML(
+                    url = "http://192.168.100.1/xml_action.cgi?method=get&module=duster&file=status1".toHttpUrl(),
+                    headers = loginHeaders
+                )
+
+
+            }catch (error: Exception) {
+                println(error)
+            }
         }
 
     }
@@ -182,20 +228,75 @@ class RealTime : AppWidgetProvider() {
 
     private val client = OkHttpClient()
 
-    private fun request(url: HttpUrl, method: String? = "GET", body: RequestBody? = null): JSONObject {
+    private fun request(url: HttpUrl, method: String? = "GET", body: RequestBody? = null, headers: Headers? = emptyMap<String, String>().toHeaders(), ignoreReturnType : Boolean? = false): JSONObject {
         val request = Request.Builder()
             .url(url)
+            .apply {if (headers != null) this.headers(headers)}
 
-        // 根据方法设置请求类型
         if (method == "POST") {
             request.post(body ?: RequestBody.create(null, ByteArray(0)))
         } else {
             request.get()
         }
-
         val response = client.newCall(request.build()).execute()
         val data = response.body?.string() ?: "Error: no data"
+        if(ignoreReturnType == true) return JSONObject()
         return JSONObject(data)
+    }
+
+    private fun requestXML(url: HttpUrl, headers: Headers? = emptyMap<String, String>().toHeaders()) {
+        val client = OkHttpClient()
+        val request = Request.Builder()
+            .url(url)
+            .apply {if (headers != null) this.headers(headers)}
+        val response = client.newCall(request.build()).execute()
+        val xmlData = response.body?.string() ?: "Error: no data"
+        println(xmlData)
+        val xml = parseXml(xmlData)
+        println(xml)
+    }
+
+    private fun getRequestHeader(url: HttpUrl, key: String): String {
+        val request = Request.Builder()
+            .url(url)
+        request.get()
+        val response = client.newCall(request.build()).execute()
+        if (response.isSuccessful) {
+            val wwwAuthenticate = response.header(key)
+            println(wwwAuthenticate)
+            return wwwAuthenticate.toString()
+        }
+        return ""
+    }
+
+    fun parseXml(xmlData: String) {
+        val factory = XmlPullParserFactory.newInstance()
+        val parser = factory.newPullParser()
+        parser.setInput(xmlData.reader())
+        var eventType = parser.eventType
+        var text = ""
+        var title = ""
+        while (eventType != XmlPullParser.END_DOCUMENT) {
+            val tagName = parser.name
+            when (eventType) {
+                XmlPullParser.START_TAG -> {
+                    // 开始标签
+                }
+                XmlPullParser.TEXT -> {
+                    text = parser.text
+                }
+                XmlPullParser.END_TAG -> {
+                    when (tagName) {
+                        "title" -> {
+                            title = text
+                            println("Found title: $title")
+                        }
+                        // 可以添加更多标签解析
+                    }
+                }
+            }
+            eventType = parser.next()
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -233,5 +334,15 @@ class RealTime : AppWidgetProvider() {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+    }
+
+    fun md5(input: String): String {
+        val md = MessageDigest.getInstance("MD5")
+        val digest = md.digest(input.toByteArray())
+        val sb = StringBuilder()
+        for (byte in digest) {
+            sb.append(String.format("%02x", byte.toInt() and 0xff))
+        }
+        return sb.toString()
     }
 }
