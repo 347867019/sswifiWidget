@@ -1,7 +1,7 @@
 package com.oxjmo.sswifiwidget
 
+import android.content.Context
 import android.os.Bundle
-import android.preference.PreferenceManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -60,10 +60,10 @@ fun TabScreen() {
 fun OubanConfig() {
     val context = LocalContext.current
     val sharedPreferences = remember {
-        PreferenceManager.getDefaultSharedPreferences(context)
+        context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
     }
-    val savedAccountId = sharedPreferences.getString("account_id", "") ?: ""
-    var enableData by remember { mutableStateOf(false) }
+    val savedAccountId = sharedPreferences.getString("oubenAccountId", "") ?: ""
+    var switchSimHidden by remember { mutableStateOf(false) }
     var accountId by remember { mutableStateOf(savedAccountId) }
 
     Column(modifier = Modifier
@@ -79,7 +79,7 @@ fun OubanConfig() {
                 onValueChange = {
                     accountId = it
                     sharedPreferences.edit {
-                        putString("account_id", it)
+                        putString("oubenAccountId", it)
                     }
                 },
                 modifier = Modifier.weight(2f)
@@ -89,13 +89,13 @@ fun OubanConfig() {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(text = "隐藏切换开关", modifier = Modifier.weight(1f))
+            Text(text = "隐藏SIM开关", modifier = Modifier.weight(1f))
             Switch(
-                checked = enableData,
+                checked = switchSimHidden,
                 onCheckedChange = {
-                    enableData = it
+                    switchSimHidden = it
                     sharedPreferences.edit {
-                        putBoolean("enable_data", it)
+                        putBoolean("oubenSwitchSimHidden", it)
                     }
                 }
             )

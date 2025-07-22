@@ -1,5 +1,6 @@
 package com.oxjmo.sswifiwidget
 
+import android.content.Context
 import com.oxjmo.sswifiwidget.RealTime.SimInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -9,15 +10,17 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
-class OuBenDevice {
+class OuBenDevice() {
     private val networkClient = NetworkClient()
     private val hostUrl = "http://192.168.1.1"
 
     suspend fun onRefresh(
+        context: Context,
         timeMillis: Long,
         setViewText: (viewId: Int, charSequence: String) -> Unit,
         updateAppWidget: () -> Unit
     ) {
+        val sharedPreferences = context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
         val timestamp = System.currentTimeMillis()
         delay(timeMillis)
         try {
@@ -35,12 +38,14 @@ class OuBenDevice {
             setViewText(R.id.networkMode, networkMode)
             updateAppWidget()
 
+            val oubenAccountId = sharedPreferences.getString("oubenAccountId", "")
+            println(oubenAccountId)
             val flowInfo = networkClient.requestJsonObject("http://wifi.ruijiadashop.cn/api/Card/loginCard", "POST", JSONObject().apply {
-                put("dev_no", "")
+                put("dev_no", oubenAccountId)
             }.toString().toRequestBody("application/json".toMediaType()))
             val data = flowInfo.getJSONObject("data")
             val remainAmount = data.getString("remainAmount")
-            val utilizableFlow = String.format("%GB", remainAmount.toDouble() / 1024)
+            val utilizableFlow = String.format("%.0fGB", remainAmount.toDouble() / 1024)
             setViewText(R.id.utilizableFlow, utilizableFlow)
             updateAppWidget()
         }catch (_: Exception) {}

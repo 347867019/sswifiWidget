@@ -56,6 +56,7 @@ class RealTime : AppWidgetProvider() {
         }
         GlobalScope.launch {
             ouBenDevice.onRefresh(
+                context = context,
                 timeMillis = timeMillis,
                 setViewText = setViewText,
                 updateAppWidget = {appWidgetManager.updateAppWidget(appWidgetId, views)}
