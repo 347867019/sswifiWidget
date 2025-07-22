@@ -1,6 +1,7 @@
 package com.oxjmo.sswifiwidget
 
 import android.os.Bundle
+import android.preference.PreferenceManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -9,6 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.edit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,7 +58,13 @@ fun TabScreen() {
 
 @Composable
 fun OubanConfig() {
+    val context = LocalContext.current
+    val sharedPreferences = remember {
+        PreferenceManager.getDefaultSharedPreferences(context)
+    }
+    val savedAccountId = sharedPreferences.getString("account_id", "") ?: ""
     var enableData by remember { mutableStateOf(false) }
+    var accountId by remember { mutableStateOf(savedAccountId) }
 
     Column(modifier = Modifier
         .fillMaxWidth()
@@ -64,10 +73,31 @@ fun OubanConfig() {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(text = "流量开关", modifier = Modifier.weight(1f))
+            Text(text = "账号ID", modifier = Modifier.weight(1f))
+            TextField(
+                value = accountId,
+                onValueChange = {
+                    accountId = it
+                    sharedPreferences.edit {
+                        putString("account_id", it)
+                    }
+                },
+                modifier = Modifier.weight(2f)
+            )
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "隐藏切换开关", modifier = Modifier.weight(1f))
             Switch(
                 checked = enableData,
-                onCheckedChange = { enableData = it }
+                onCheckedChange = {
+                    enableData = it
+                    sharedPreferences.edit {
+                        putBoolean("enable_data", it)
+                    }
+                }
             )
         }
     }
