@@ -3,19 +3,20 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:padding="10dp"
     android:theme="@style/Theme.SswifiWidget.AppWidgetContainer">
 
     <Button
         android:id="@+id/refresh"
         android:layout_width="fill_parent"
-        android:layout_height="40sp"
+        android:layout_height="40dp"
         android:textSize="12sp"
         android:text="刷新" />
 
     <Button
         android:id="@+id/switchSIM"
         android:layout_width="fill_parent"
-        android:layout_height="40sp"
+        android:layout_height="40dp"
         android:textSize="12sp"
         android:text="切换sim卡" />
 
@@ -24,15 +25,15 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
         <TextView
-            android:layout_width="40sp"
+            android:layout_width="40dp"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:text="IP" />
         <TextView
             android:id="@+id/ip"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:layout_marginStart="10dp" />
     </LinearLayout>
 
@@ -41,15 +42,15 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
         <TextView
-            android:layout_width="40sp"
+            android:layout_width="40dp"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:text="信号" />
         <TextView
             android:id="@+id/rssi"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:layout_marginStart="10dp" />
     </LinearLayout>
 
@@ -58,15 +59,15 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
         <TextView
-            android:layout_width="40sp"
+            android:layout_width="40dp"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:text="电量" />
         <TextView
             android:id="@+id/electricQuantity"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:layout_marginStart="10dp" />
     </LinearLayout>
 
@@ -75,15 +76,15 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
         <TextView
-            android:layout_width="40sp"
+            android:layout_width="40dp"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:text="运营商" />
         <TextView
             android:id="@+id/provider"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:layout_marginStart="10dp" />
     </LinearLayout>
 
@@ -92,15 +93,32 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
         <TextView
-            android:layout_width="40sp"
+            android:layout_width="40dp"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:text="模式" />
         <TextView
             android:id="@+id/networkMode"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
+            android:textSize="10sp"
+            android:layout_marginStart="10dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:textSize="10sp"
+            android:text="剩余流量" />
+        <TextView
+            android:id="@+id/utilizableFlow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="10sp"
             android:layout_marginStart="10dp" />
     </LinearLayout>
 

@@ -28,6 +28,8 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.oxjmo.sswifiwidget.REFRESH" />
+                <action android:name="com.oxjmo.sswifiwidget.SWITCHSIM" />
             </intent-filter>
 
             <meta-data

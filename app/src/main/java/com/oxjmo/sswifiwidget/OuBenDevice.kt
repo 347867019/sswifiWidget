@@ -34,6 +34,15 @@ class OuBenDevice {
             setViewText(R.id.provider, provider)
             setViewText(R.id.networkMode, networkMode)
             updateAppWidget()
+
+            val flowInfo = networkClient.requestJsonObject("http://wifi.ruijiadashop.cn/api/Card/loginCard", "POST", JSONObject().apply {
+                put("dev_no", "")
+            }.toString().toRequestBody("application/json".toMediaType()))
+            val data = flowInfo.getJSONObject("data")
+            val remainAmount = data.getString("remainAmount")
+            val utilizableFlow = String.format("%GB", remainAmount.toDouble() / 1024)
+            setViewText(R.id.utilizableFlow, utilizableFlow)
+            updateAppWidget()
         }catch (_: Exception) {}
     }
 

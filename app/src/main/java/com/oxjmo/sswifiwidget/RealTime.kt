@@ -43,7 +43,7 @@ class RealTime : AppWidgetProvider() {
     ) {
         Toast.makeText(context, "等待刷新", Toast.LENGTH_SHORT).show()
         val views = RemoteViews(context.packageName, R.layout.real_time)
-        val textViews = listOf(R.id.ip, R.id.rssi, R.id.electricQuantity, R.id.provider, R.id.networkMode)
+        val textViews = listOf(R.id.ip, R.id.rssi, R.id.electricQuantity, R.id.provider, R.id.networkMode, R.id.utilizableFlow)
         for (viewId in textViews) {
             views.setTextViewText(viewId, "--")
         }
@@ -107,9 +107,10 @@ class RealTime : AppWidgetProvider() {
             action = ACTION_REFRESH
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
         }
+        val requestCode = appWidgetId + (System.currentTimeMillis() / 1000).toInt()
         return PendingIntent.getBroadcast(
             context,
-            appWidgetId,
+            requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -120,9 +121,10 @@ class RealTime : AppWidgetProvider() {
             action = ACTION_SWITCH_SIM
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
         }
+        val requestCode = appWidgetId + (System.currentTimeMillis() / 1000).toInt()
         return PendingIntent.getBroadcast(
             context,
-            appWidgetId,
+            requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
