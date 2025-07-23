@@ -97,9 +97,9 @@ class RealTime : AppWidgetProvider() {
                     updateAppWidget(context, AppWidgetManager.getInstance(context), appWidgetId, 200L)
                 }
             }
-            ouBenDevice.onSwitchSim(
-                callback = callback
-            )
+            ouBenDevice.onSwitchSim(callback = callback)
+            newYingTengDevice.onSwitchSim(callback = callback)
+            oldYingTengDevice.onSwitchSim(callback = callback)
         }
     }
 

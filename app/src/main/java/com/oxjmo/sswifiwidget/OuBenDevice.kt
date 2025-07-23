@@ -78,7 +78,6 @@ class OuBenDevice() {
                 println(result)
                 callback()
             }catch (error: Exception) {
-                println("切换成功")
                 println(error)
             }
         }

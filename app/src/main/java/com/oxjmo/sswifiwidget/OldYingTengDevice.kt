@@ -1,6 +1,9 @@
 package com.oxjmo.sswifiwidget
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import okhttp3.Headers
 import okhttp3.Headers.Companion.toHeaders
 import org.xmlpull.v1.XmlPullParserFactory
@@ -12,53 +15,26 @@ class OldYingTengDevice {
     private val networkClient = NetworkClient()
     private val hostUrl = "http://192.168.100.1"
 
+    private var headers = mapOf(
+        "Authorization" to ""
+    ).toHeaders()
     suspend fun onRefresh(
         timeMillis: Long,
         setViewText: (viewId: Int, charSequence: String) -> Unit,
         updateAppWidget: () -> Unit
     ) {
-        val timestamp = System.currentTimeMillis()
         delay(timeMillis)
         try {
-            val loginParamString = networkClient.getResponseHeader("$hostUrl/login.cgi?_=$timestamp", "WWW-Authenticate")
-            val loginParamMap = loginParamString.replace("\"", "").replace(", ", " ").split(" ")
-            val loginParam = loginParamMap.map { it.split("=").getOrElse(1) { "" } }
-            val authRealm = loginParam.getOrNull(1) ?: ""
-            val nonce = loginParam.getOrNull(2) ?: ""
-            val authQop = loginParam.getOrNull(3) ?: ""
-            val username = "admin"
-            val password = "admin"
-            val rand = Random.nextInt(100001)
-            val date = System.currentTimeMillis()
-            val salt = "$rand$date"
-            val tmp = md5(salt)
-            val authCnonce = tmp.take(16)
-            val HA1 = md5("$username:$authRealm:$password")
-            val HA2ByUrl = md5("GET:/cgi/protected.cgi")
-            val HA2ByHeader = md5("GET:/cgi/xml_action.cgi")
-            val digestResByUrl = md5("$HA1:$nonce:00000001:$authCnonce:$authQop:$HA2ByUrl")
-            val digestResByHeader = md5("$HA1:$nonce:00000002:$authCnonce:$authQop:$HA2ByHeader")
-            val headers: Headers = mapOf(
-                "Authorization" to "Digest username=\"$username\", realm=\"$authRealm\", nonce=\"$nonce\", uri=\"/cgi/xml_action.cgi\", response=\"$digestResByHeader\", qop=$authQop, nc=00000002, cnonce=\"$authCnonce\""
-            ).toHeaders()
-            val response = networkClient.requestString(
-                url = "$hostUrl/login.cgi?Action=Digest&username=$username&realm=$authRealm&nonce=$nonce&response=$digestResByUrl&qop=$authQop&cnonce=$authCnonce&temp=asr&_=$timestamp",
-                headers = headers
-            )
-            if(!response.contains("HTTP/1.1 200 OK")) return
+            login()
             val xmlData = networkClient.requestString(
                 url = "$hostUrl/xml_action.cgi?method=get&module=duster&file=status1",
                 headers = headers
             )
-            val extractTagContent: (String) -> String? = { tag ->
-                val pattern = "<$tag>(.*?)</$tag>".toRegex()
-                pattern.find(xmlData)?.groupValues?.get(1)
-            }
-            val ip = extractTagContent("ip").toString()
-            val rssi = extractTagContent("rssi").toString()
-            val electricQuantity = extractTagContent("Battery_voltage").toString()
-            val provider = extractTagContent("network_name").toString()
-            val sysMode = extractTagContent("sys_mode").toString()
+            val ip = extractTagContent("ip", extractTagContent("lan", xmlData).toString()).toString()
+            val rssi = extractTagContent("rssi", xmlData).toString()
+            val electricQuantity = extractTagContent("Battery_voltage", xmlData).toString()
+            val provider = extractTagContent("network_name", xmlData).toString()
+            val sysMode = extractTagContent("sys_mode", xmlData).toString()
             val dbm = getDbm(rssi, sysMode)
             val networkMode = getNetworkMode(sysMode)
             setViewText(R.id.ip, ip)
@@ -71,7 +47,53 @@ class OldYingTengDevice {
         }catch (error: Exception) {
             println(error)
         }
+    }
 
+    fun onSwitchSim(
+        callback: () -> Unit
+    ) {
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                login()
+                val htmlData = networkClient.requestString("$hostUrl/html/internet/internet_connection.html")
+                val count = countValidOptions(htmlData, "VersionSel")
+                println(count)
+            }catch (error: Exception) {
+                println(error)
+            }
+        }
+
+    }
+
+    private fun login() {
+        val timestamp = System.currentTimeMillis()
+        val loginParamString = networkClient.getResponseHeader("$hostUrl/login.cgi?_=$timestamp", "WWW-Authenticate")
+        val loginParamMap = loginParamString.replace("\"", "").replace(", ", " ").split(" ")
+        val loginParam = loginParamMap.map { it.split("=").getOrElse(1) { "" } }
+        val authRealm = loginParam.getOrNull(1) ?: ""
+        val nonce = loginParam.getOrNull(2) ?: ""
+        val authQop = loginParam.getOrNull(3) ?: ""
+        val username = "admin"
+        val password = "admin"
+        val rand = Random.nextInt(100001)
+        val date = System.currentTimeMillis()
+        val salt = "$rand$date"
+        val tmp = md5(salt)
+        val authCnonce = tmp.take(16)
+        val HA1 = md5("$username:$authRealm:$password")
+        val HA2ByUrl = md5("GET:/cgi/protected.cgi")
+        val HA2ByHeader = md5("GET:/cgi/xml_action.cgi")
+        val digestResByUrl = md5("$HA1:$nonce:00000001:$authCnonce:$authQop:$HA2ByUrl")
+        val digestResByHeader = md5("$HA1:$nonce:00000002:$authCnonce:$authQop:$HA2ByHeader")
+        headers = mapOf(
+            "Authorization" to "Digest username=\"$username\", realm=\"$authRealm\", nonce=\"$nonce\", uri=\"/cgi/xml_action.cgi\", response=\"$digestResByHeader\", qop=$authQop, nc=00000002, cnonce=\"$authCnonce\""
+        ).toHeaders()
+        val response = networkClient.requestString(
+            url = "$hostUrl/login.cgi?Action=Digest&username=$username&realm=$authRealm&nonce=$nonce&response=$digestResByUrl&qop=$authQop&cnonce=$authCnonce&temp=asr&_=$timestamp",
+            headers = headers
+        )
+        if(response.contains("HTTP/1.1 200 OK")) return
+        throw Exception("登录失败")
     }
 
     fun getDbm(rssi: String, sysMode: String): String {
@@ -94,6 +116,21 @@ class OldYingTengDevice {
         } else {
             return "No Service"
         }
+    }
+
+    fun extractTagContent(tag: String, data: String): String? {
+        val safeTag = Regex.escape(tag)
+        val pattern = "<$safeTag>(.*?)</$safeTag>".toRegex()
+        return pattern.find(data)?.groupValues?.get(1)
+    }
+
+    fun countValidOptions(html: String, selectId: String): Int {
+        val selectRegex = Regex("<select\\s+id=[\"']$selectId[\"']>(.*?)</select>", RegexOption.DOT_MATCHES_ALL)
+        val selectContent = selectRegex.find(html)?.groupValues?.get(1) ?: return 0
+        val commentRegex = Regex("<!--.*?-->", RegexOption.DOT_MATCHES_ALL)
+        val cleanedContent = commentRegex.replace(selectContent, "")
+        val optionRegex = Regex("<option\\b", RegexOption.IGNORE_CASE)
+        return optionRegex.findAll(cleanedContent).count()
     }
 
     fun md5(input: String): String {
