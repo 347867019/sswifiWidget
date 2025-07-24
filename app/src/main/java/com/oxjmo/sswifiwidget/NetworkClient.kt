@@ -8,9 +8,14 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
 class NetworkClient {
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
+        .build()
 
     private fun executeRequest(
         url: String,
@@ -37,7 +42,9 @@ class NetworkClient {
         headers: Headers? = emptyMap<String, String>().toHeaders()
     ): String {
         val response = executeRequest(url, method, body, headers)
-        return response.body?.string() ?: "Error: no data"
+        val stringData = response.body?.string() ?: "Error: no data"
+        response.close()
+        return stringData
     }
 
     fun requestJsonObject  (
@@ -47,8 +54,9 @@ class NetworkClient {
         headers: Headers? = emptyMap<String, String>().toHeaders()
     ): JSONObject {
         val response = executeRequest(url, method, body, headers)
-        val data = response.body?.string() ?: "Error: no data"
-        return JSONObject(data)
+        val objectData = response.body?.string() ?: "Error: no data"
+        response.close()
+        return JSONObject(objectData)
     }
 
     fun getResponseHeader(url: String, key: String): String {

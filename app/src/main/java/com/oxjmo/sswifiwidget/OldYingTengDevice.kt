@@ -1,11 +1,14 @@
 package com.oxjmo.sswifiwidget
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.Headers
 import okhttp3.Headers.Companion.toHeaders
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.StringReader
 import java.security.MessageDigest
@@ -56,10 +59,25 @@ class OldYingTengDevice {
             try {
                 login()
                 val htmlData = networkClient.requestString("$hostUrl/html/internet/internet_connection.html")
-                val count = countValidOptions(htmlData, "VersionSel")
-                println(count)
+                val simCount = countValidOptions(htmlData, "VersionSel").toInt()
+                val statusXMLData = networkClient.requestString(
+                    url = "$hostUrl/xml_action.cgi?method=get&module=duster&file=wan",
+                    headers = headers
+                )
+                val currentSim = extractTagContent("version_flag", extractTagContent("wan", statusXMLData).toString())?.toInt() ?: 0
+                val nextSimIndex = if (currentSim + 1 >= simCount) { 0 } else { currentSim + 1 }
+                println(nextSimIndex)
+                val response = networkClient.requestString(
+                    url = "$hostUrl/xml_action.cgi?method=set&module=duster&file=wan",
+                    method = "POST",
+                    headers = headers,
+                    body = "<?xml version=\"1.0\" encoding=\"US-ASCII\"?> <RGW><wan><version_flag>$nextSimIndex</version_flag><version_flag_action>1</version_flag_action></wan></RGW>".toRequestBody("application/xml".toMediaType())
+                )
+                println(response)
             }catch (error: Exception) {
-                println(error)
+                println("-----")
+                Log.d("MainActivity", error.toString())
+                println("-----")
             }
         }
 

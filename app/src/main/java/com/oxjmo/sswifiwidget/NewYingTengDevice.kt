@@ -44,14 +44,14 @@ class NewYingTengDevice {
             try {
                 login()
                 val properties = networkClient.requestString("$hostUrl/i18n/Messages_zh-cn.properties")
-                val modeCount = Regex("CARD").findAll(properties).count()
+                val simCount = Regex("CARD").findAll(properties).count()
                 val data = networkClient.requestJsonObject("$hostUrl/reqproc/proc_get?cmd=alk_sim_select&_=$timestamp")
-                val currentMode = data.getString("alk_sim_select").toInt()
-                val nextMode = if (currentMode + 1 >= modeCount) { 0 } else { currentMode + 1 }
+                val currentSim = data.getString("alk_sim_select").toInt()
+                val nextSimIndex = if (currentSim + 1 >= simCount) { 0 } else { currentSim + 1 }
                 val response = networkClient.requestJsonObject(
                     url = "$hostUrl/reqproc/proc_post",
                     method = "POST",
-                    body = "goformId=ALK_SIM_SELECT&sim_select=$nextMode".toRequestBody("application/x-www-form-urlencoded".toMediaType())
+                    body = "goformId=ALK_SIM_SELECT&sim_select=$nextSimIndex".toRequestBody("application/x-www-form-urlencoded".toMediaType())
                 )
                 if(response.getString("result") == "success") {
                     callback()
