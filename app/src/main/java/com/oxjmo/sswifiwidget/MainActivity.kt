@@ -48,11 +48,24 @@ fun TabScreen() {
         })
 
         // 根据当前选中的 Tab 显示不同内容
-        when (selectedTabIndex) {
-            0 -> OubanConfig()
-            1 -> Text(text = "老影腾 的配置内容")
-            2 -> Text(text = "新影腾 的配置内容")
+        Box(
+            modifier = Modifier
+                .weight(1f) // 中间区域撑开
+                .fillMaxWidth()
+        ) {
+            when (selectedTabIndex) {
+                0 -> OubanConfig()
+                1 -> NewYingTengConfig()
+                2 -> OldYingTengConfig()
+            }
         }
+
+        Text(
+            text = "版本号：1.0.1",
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(16.dp)
+        )
     }
 }
 
@@ -62,10 +75,16 @@ fun OubanConfig() {
     val sharedPreferences = remember {
         context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
     }
-    val savedAccountId = sharedPreferences.getString("oubenAccountId", "") ?: ""
-    var switchSimHidden by remember { mutableStateOf(false) }
-    var accountId by remember { mutableStateOf(savedAccountId) }
-
+    var accountId by remember {
+        mutableStateOf(
+            sharedPreferences.getString("oubenAccountId", "") ?: ""
+        )
+    }
+    var switchSimHidden = remember {
+        mutableStateOf(
+            sharedPreferences.getBoolean("oubenSwitchSimHidden", false)
+        )
+    }
     Column(modifier = Modifier
         .fillMaxWidth()
         .padding(16.dp)) {
@@ -91,11 +110,75 @@ fun OubanConfig() {
         ) {
             Text(text = "隐藏SIM开关", modifier = Modifier.weight(1f))
             Switch(
-                checked = switchSimHidden,
+                checked = switchSimHidden.value,
                 onCheckedChange = {
-                    switchSimHidden = it
+                    switchSimHidden.value = it
                     sharedPreferences.edit {
                         putBoolean("oubenSwitchSimHidden", it)
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun NewYingTengConfig() {
+    val context = LocalContext.current
+    val sharedPreferences = remember {
+        context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
+    }
+    var switchSimHidden = remember {
+        mutableStateOf(
+            sharedPreferences.getBoolean("newYingTengSwitchSimHidden", false)
+        )
+    }
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .padding(16.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "隐藏SIM开关", modifier = Modifier.weight(1f))
+            Switch(
+                checked = switchSimHidden.value,
+                onCheckedChange = {
+                    switchSimHidden.value = it
+                    sharedPreferences.edit {
+                        putBoolean("newYingTengSwitchSimHidden", it)
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun OldYingTengConfig() {
+    val context = LocalContext.current
+    val sharedPreferences = remember {
+        context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
+    }
+    var switchSimHidden = remember {
+        mutableStateOf(
+            sharedPreferences.getBoolean("oldYingTengSwitchSimHidden", false)
+        )
+    }
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .padding(16.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "隐藏SIM开关", modifier = Modifier.weight(1f))
+            Switch(
+                checked = switchSimHidden.value,
+                onCheckedChange = {
+                    switchSimHidden.value = it
+                    sharedPreferences.edit {
+                        putBoolean("oldYingTengSwitchSimHidden", it)
                     }
                 }
             )
