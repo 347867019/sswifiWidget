@@ -1,6 +1,7 @@
 package com.oxjmo.sswifiwidget
 
 import android.content.Context
+import android.view.View
 import com.oxjmo.sswifiwidget.RealTime.SimInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -18,6 +19,7 @@ class OuBenDevice() {
         context: Context,
         timeMillis: Long,
         setViewText: (viewId: Int, charSequence: String) -> Unit,
+        setViewVisibility: (viewId: Int, isVisible: Boolean) -> Unit,
         updateAppWidget: () -> Unit
     ) {
         val sharedPreferences = context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
@@ -36,6 +38,7 @@ class OuBenDevice() {
             setViewText(R.id.electricQuantity, "$electricQuantity%")
             setViewText(R.id.provider, provider)
             setViewText(R.id.networkMode, networkMode)
+            setViewVisibility(R.id.switchSIM, !sharedPreferences.getBoolean("oubenSwitchSimHidden", false))
             updateAppWidget()
 
             val oubenAccountId = sharedPreferences.getString("oubenAccountId", "")
@@ -71,12 +74,13 @@ class OuBenDevice() {
                 val findSimIndex = simList.indexOfFirst { it.simId == currentSimId }
                 val nextSimIndex = if (findSimIndex + 1 >= simList.size){ 0 } else { findSimIndex + 1 }
                 println(nextSimIndex)
-                val result = networkClient.requestJsonObject("$hostUrl/xml_action.cgi?method=post&module=duster&file=json_mss_support_set$timestamp", "POST", JSONObject().apply {
+                val response = networkClient.requestJsonObject("$hostUrl/xml_action.cgi?method=post&module=duster&file=json_mss_support_set$timestamp", "POST", JSONObject().apply {
                     put("sole_sim_id", nextSimIndex.toString())
                     put("switch_mode", "1")
                 }.toString().toRequestBody("application/json".toMediaType()))
-                println(result)
-                callback()
+                if(response.getString("result") == "success") {
+                    callback()
+                }
             }catch (error: Exception) {
                 println(error)
             }

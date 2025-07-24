@@ -1,5 +1,7 @@
 package com.oxjmo.sswifiwidget
 
+import android.content.Context
+import android.view.View
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -14,10 +16,13 @@ class NewYingTengDevice {
     private val hostUrl = "http://192.168.100.1"
 
     suspend fun onRefresh(
+        context: Context,
         timeMillis: Long,
         setViewText: (viewId: Int, charSequence: String) -> Unit,
+        setViewVisibility: (viewId: Int, isVisible: Boolean) -> Unit,
         updateAppWidget: () -> Unit
     ) {
+        val sharedPreferences = context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
         val timestamp = System.currentTimeMillis()
         delay(timeMillis)
         try {
@@ -32,7 +37,9 @@ class NewYingTengDevice {
             setViewText(R.id.electricQuantity, "$electricQuantity%")
             setViewText(R.id.provider, "")
             setViewText(R.id.networkMode, networkType)
+            setViewVisibility(R.id.switchSIM, !sharedPreferences.getBoolean("newYingTengSwitchSimHidden", false))
             updateAppWidget()
+
         }catch (_: Exception) {}
     }
 

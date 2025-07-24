@@ -33,7 +33,7 @@ fun MyApp(content: @Composable () -> Unit) {
 
 @Composable
 fun TabScreen() {
-    val tabs = listOf("欧本", "老影腾", "新影腾")
+    val tabs = listOf("欧本", "新影腾", "老影腾")
     var selectedTabIndex by remember { mutableStateOf(0) }
 
     Column(modifier = Modifier.fillMaxSize()) {

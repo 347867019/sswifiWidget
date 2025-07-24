@@ -8,6 +8,7 @@ import android.widget.RemoteViews
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.widget.Toast
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -54,25 +55,34 @@ class RealTime : AppWidgetProvider() {
         val setViewText: (Int, String) -> Unit = { viewId, text ->
             views.setTextViewText(viewId, if (text.isEmpty()) "--" else text)
         }
+        val setViewVisibility: (Int, Boolean) -> Unit = { viewId, isVisible ->
+            views.setViewVisibility(viewId, if (isVisible) View.VISIBLE else View.GONE)
+        }
+
         GlobalScope.launch {
             ouBenDevice.onRefresh(
                 context = context,
                 timeMillis = timeMillis,
                 setViewText = setViewText,
+                setViewVisibility = setViewVisibility,
                 updateAppWidget = {appWidgetManager.updateAppWidget(appWidgetId, views)}
             )
         }
         GlobalScope.launch {
             newYingTengDevice.onRefresh(
+                context = context,
                 timeMillis = timeMillis,
                 setViewText = setViewText,
+                setViewVisibility = setViewVisibility,
                 updateAppWidget = {appWidgetManager.updateAppWidget(appWidgetId, views)}
             )
         }
         GlobalScope.launch {
             oldYingTengDevice.onRefresh(
+                context = context,
                 timeMillis = timeMillis,
                 setViewText = setViewText,
+                setViewVisibility = setViewVisibility,
                 updateAppWidget = {appWidgetManager.updateAppWidget(appWidgetId, views)}
             )
         }

@@ -1,6 +1,8 @@
 package com.oxjmo.sswifiwidget
 
+import android.content.Context
 import android.util.Log
+import android.view.View
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -20,10 +22,13 @@ class OldYingTengDevice {
 
     private var loginParamString = ""
     suspend fun onRefresh(
+        context: Context,
         timeMillis: Long,
         setViewText: (viewId: Int, charSequence: String) -> Unit,
+        setViewVisibility: (viewId: Int, charSequence: Boolean) -> Unit,
         updateAppWidget: () -> Unit
     ) {
+        val sharedPreferences = context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
         delay(timeMillis)
         try {
             login()
@@ -43,6 +48,7 @@ class OldYingTengDevice {
             setViewText(R.id.electricQuantity, "$electricQuantity%")
             setViewText(R.id.provider, provider)
             setViewText(R.id.networkMode, networkMode)
+            setViewVisibility(R.id.switchSIM, !sharedPreferences.getBoolean("oldYingTengSwitchSimHidden", false))
             updateAppWidget()
 
         }catch (error: Exception) {
@@ -72,10 +78,11 @@ class OldYingTengDevice {
                     body = "<?xml version=\"1.0\" encoding=\"US-ASCII\"?> <RGW><wan><version_flag>$nextSimIndex</version_flag><version_flag_action>1</version_flag_action></wan></RGW>".toRequestBody("application/xml".toMediaType())
                 )
                 println(response)
+                if(response.startsWith("<RGW><wan>")) {
+                    callback()
+                }
             }catch (error: Exception) {
-                println("-----")
-                Log.d("MainActivity", error.toString())
-                println("-----")
+                println(error.toString())
             }
         }
 
