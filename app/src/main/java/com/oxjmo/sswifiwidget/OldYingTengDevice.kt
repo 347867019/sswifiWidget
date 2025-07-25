@@ -18,9 +18,7 @@ class OldYingTengDevice {
     private val networkClient = NetworkClient()
     private val hostUrl = "http://192.168.100.1"
 
-    private var headers = mapOf(
-        "Authorization" to ""
-    ).toHeaders()
+    private var loginParamString = ""
     suspend fun onRefresh(
         timeMillis: Long,
         setViewText: (viewId: Int, charSequence: String) -> Unit,
@@ -31,7 +29,7 @@ class OldYingTengDevice {
             login()
             val xmlData = networkClient.requestString(
                 url = "$hostUrl/xml_action.cgi?method=get&module=duster&file=status1",
-                headers = headers
+                headers = getAuthHeaders("GET").headers
             )
             val ip = extractTagContent("ip", extractTagContent("lan", xmlData).toString()).toString()
             val rssi = extractTagContent("rssi", xmlData).toString()
@@ -62,7 +60,7 @@ class OldYingTengDevice {
                 val simCount = countValidOptions(htmlData, "VersionSel").toInt()
                 val statusXMLData = networkClient.requestString(
                     url = "$hostUrl/xml_action.cgi?method=get&module=duster&file=wan",
-                    headers = headers
+                    headers = getAuthHeaders("GET").headers
                 )
                 val currentSim = extractTagContent("version_flag", extractTagContent("wan", statusXMLData).toString())?.toInt() ?: 0
                 val nextSimIndex = if (currentSim + 1 >= simCount) { 0 } else { currentSim + 1 }
@@ -70,7 +68,7 @@ class OldYingTengDevice {
                 val response = networkClient.requestString(
                     url = "$hostUrl/xml_action.cgi?method=set&module=duster&file=wan",
                     method = "POST",
-                    headers = headers,
+                    headers = getAuthHeaders("POST").headers,
                     body = "<?xml version=\"1.0\" encoding=\"US-ASCII\"?> <RGW><wan><version_flag>$nextSimIndex</version_flag><version_flag_action>1</version_flag_action></wan></RGW>".toRequestBody("application/xml".toMediaType())
                 )
                 println(response)
@@ -85,7 +83,27 @@ class OldYingTengDevice {
 
     private fun login() {
         val timestamp = System.currentTimeMillis()
-        val loginParamString = networkClient.getResponseHeader("$hostUrl/login.cgi?_=$timestamp", "WWW-Authenticate")
+        loginParamString = networkClient.getResponseHeader("$hostUrl/login.cgi?_=$timestamp", "WWW-Authenticate")
+        val authHeaderResult = getAuthHeaders("GET")
+        val response = networkClient.requestString(
+            url = "$hostUrl/login.cgi?Action=Digest&username=${authHeaderResult.username}&realm=${authHeaderResult.authRealm}&nonce=${authHeaderResult.nonce}&response=${authHeaderResult.digestResByUrl}&qop=${authHeaderResult.authQop}&cnonce=${authHeaderResult.authCnonce}&temp=asr&_=$timestamp",
+            headers = authHeaderResult.headers
+        )
+        if(response.contains("HTTP/1.1 200 OK")) return
+        throw Exception("登录失败")
+    }
+
+    data class AuthHeaderResult(
+        val username: String,
+        val authRealm: String,
+        val nonce: String,
+        val digestResByUrl: String,
+        val authQop: String,
+        val authCnonce: String,
+        val headers: Headers
+    )
+
+    fun getAuthHeaders(requestType: String): AuthHeaderResult {
         val loginParamMap = loginParamString.replace("\"", "").replace(", ", " ").split(" ")
         val loginParam = loginParamMap.map { it.split("=").getOrElse(1) { "" } }
         val authRealm = loginParam.getOrNull(1) ?: ""
@@ -100,18 +118,20 @@ class OldYingTengDevice {
         val authCnonce = tmp.take(16)
         val HA1 = md5("$username:$authRealm:$password")
         val HA2ByUrl = md5("GET:/cgi/protected.cgi")
-        val HA2ByHeader = md5("GET:/cgi/xml_action.cgi")
+        val HA2ByHeader = md5("$requestType:/cgi/xml_action.cgi")
         val digestResByUrl = md5("$HA1:$nonce:00000001:$authCnonce:$authQop:$HA2ByUrl")
         val digestResByHeader = md5("$HA1:$nonce:00000002:$authCnonce:$authQop:$HA2ByHeader")
-        headers = mapOf(
-            "Authorization" to "Digest username=\"$username\", realm=\"$authRealm\", nonce=\"$nonce\", uri=\"/cgi/xml_action.cgi\", response=\"$digestResByHeader\", qop=$authQop, nc=00000002, cnonce=\"$authCnonce\""
-        ).toHeaders()
-        val response = networkClient.requestString(
-            url = "$hostUrl/login.cgi?Action=Digest&username=$username&realm=$authRealm&nonce=$nonce&response=$digestResByUrl&qop=$authQop&cnonce=$authCnonce&temp=asr&_=$timestamp",
-            headers = headers
+        return AuthHeaderResult(
+            username = username,
+            authRealm = authRealm,
+            nonce = nonce,
+            digestResByUrl = digestResByUrl,
+            authQop = authQop,
+            authCnonce = authCnonce,
+            headers = mapOf(
+                "Authorization" to "Digest username=\"$username\", realm=\"$authRealm\", nonce=\"$nonce\", uri=\"/cgi/xml_action.cgi\", response=\"$digestResByHeader\", qop=$authQop, nc=00000002, cnonce=\"$authCnonce\""
+            ).toHeaders()
         )
-        if(response.contains("HTTP/1.1 200 OK")) return
-        throw Exception("登录失败")
     }
 
     fun getDbm(rssi: String, sysMode: String): String {
