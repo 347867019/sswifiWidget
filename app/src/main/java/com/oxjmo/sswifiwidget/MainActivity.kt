@@ -33,6 +33,8 @@ fun MyApp(content: @Composable () -> Unit) {
 
 @Composable
 fun TabScreen() {
+    val context = LocalContext.current
+    val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
     val tabs = listOf("欧本", "新影腾", "老影腾")
     var selectedTabIndex by remember { mutableStateOf(0) }
 
@@ -61,7 +63,7 @@ fun TabScreen() {
         }
 
         Text(
-            text = "版本号：1.0.1",
+            text = "version：${pInfo.versionName}",
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
                 .padding(16.dp)

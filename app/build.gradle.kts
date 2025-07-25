@@ -1,3 +1,6 @@
+import java.text.SimpleDateFormat
+import java.util.Date
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -13,9 +16,22 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    applicationVariants.configureEach {
+        outputs.configureEach {
+            val date = Date()
+            val formattedDate = SimpleDateFormat("yyyyMMdd").format(date)
+            val versionName = defaultConfig.versionName
+            val buildTypeName = buildType.name
+            val newName = "ssWifiWidget-$versionName-${buildTypeName}-$formattedDate.apk"
+            if (this is com.android.build.gradle.internal.api.BaseVariantOutputImpl) {
+                outputFileName = newName
+            }
+        }
     }
 
     buildTypes {
