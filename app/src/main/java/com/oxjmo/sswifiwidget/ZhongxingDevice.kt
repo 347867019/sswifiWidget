@@ -39,7 +39,7 @@ class ZhongxingDevice {
             setViewText(R.id.electricQuantity, "$electricQuantity%")
             setViewText(R.id.provider, provider)
             setViewText(R.id.networkMode, networkType)
-            setViewVisibility(R.id.switchSIM, !sharedPreferences.getBoolean("zhongxingSwitchSimHidden", false))
+            setViewVisibility(R.id.switchSIM, !sharedPreferences.getBoolean("zhongXingSwitchSimHidden", false))
             updateAppWidget()
 
         }catch (_: Exception) {}
