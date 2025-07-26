@@ -4,6 +4,11 @@ import android.content.Context
 import kotlinx.coroutines.delay
 import okhttp3.FormBody
 import android.util.Base64
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class ZhongxingDevice {
     private val networkClient = NetworkClient()
@@ -17,6 +22,7 @@ class ZhongxingDevice {
         setViewVisibility: (viewId: Int, isVisible: Boolean) -> Unit,
         updateAppWidget: () -> Unit
     ) {
+        val sharedPreferences = context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
         val timestamp = System.currentTimeMillis()
         delay(timeMillis)
         try {
@@ -33,11 +39,37 @@ class ZhongxingDevice {
             setViewText(R.id.electricQuantity, "$electricQuantity%")
             setViewText(R.id.provider, provider)
             setViewText(R.id.networkMode, networkType)
-//            setViewVisibility(R.id.switchSIM, !sharedPreferences.getBoolean("newYingTengSwitchSimHidden", false))
+            setViewVisibility(R.id.switchSIM, !sharedPreferences.getBoolean("zhongxingSwitchSimHidden", false))
             updateAppWidget()
 
         }catch (_: Exception) {}
+    }
 
+    fun onSwitchSim(
+        callback: () -> Unit
+    ) {
+        val timestamp = System.currentTimeMillis()
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                login()
+                getProperties()
+                val htmlData = networkClient.requestString("$hostUrl/tmpl/esim/esim.html")
+                val simCount = Regex("EsimSimGrp").findAll(htmlData).count()
+                val statusData = networkClient.requestJsonObject("$hostUrl/goform/goform_get_cmd_process?isTest=false&cmd=sim_esim_mode&multi_data=1&_=$timestamp")
+                val currentSim = statusData.getString("sim_esim_mode").toInt()
+                val nextSimIndex = if (currentSim + 1 >= simCount) { 0 } else { currentSim + 1 }
+                val switchResponse = networkClient.requestJsonObject(
+                    url = "$hostUrl/goform/goform_set_cmd_process",
+                    method = "POST",
+                    body = "goformId=set_esim&isTest=false&esimmode=$nextSimIndex".toRequestBody("application/x-www-form-urlencoded".toMediaType())
+                )
+                if(switchResponse.getString("result") == "success") {
+                    callback()
+                }
+            }catch (error: Exception) {
+                println(error)
+            }
+        }
     }
 
     private fun login() {
@@ -68,11 +100,11 @@ class ZhongxingDevice {
     private fun getProvider(provider: String): String {
         val data = properties.trimIndent()
         if(provider == "中国广电") {
-            val matchResult = Regex("China_radio_and_television=(.+?)\n").find(data)
+            val matchResult = Regex("China_radio_and_television = (.+?)\n").find(data)
             return matchResult?.groupValues?.get(1)?.toString() ?: provider
         }
         if(provider == "China Mobile") {
-            val matchResult = Regex("china_mobile=(.+?)\n").find(data)
+            val matchResult = Regex("china_mobile = (.+?)\n").find(data)
             return matchResult?.groupValues?.get(1)?.toString() ?: provider
         }
         if(provider == "China Unicom") {
@@ -80,7 +112,7 @@ class ZhongxingDevice {
             return matchResult?.groupValues?.get(1)?.toString() ?: provider
         }
         if(provider == "China Telecom") {
-            val matchResult = Regex("china_telecom=(.+?)\n").find(data)
+            val matchResult = Regex("china_telecom = (.+?)\n").find(data)
             return matchResult?.groupValues?.get(1)?.toString() ?: provider
         }
         return provider

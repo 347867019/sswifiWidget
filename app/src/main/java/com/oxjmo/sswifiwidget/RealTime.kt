@@ -120,6 +120,7 @@ class RealTime : AppWidgetProvider() {
             ouBenDevice.onSwitchSim(callback = callback)
             newYingTengDevice.onSwitchSim(callback = callback)
             oldYingTengDevice.onSwitchSim(callback = callback)
+            zhongxingDevice.onSwitchSim(callback = callback)
         }
     }
 

@@ -35,7 +35,7 @@ fun MyApp(content: @Composable () -> Unit) {
 fun TabScreen() {
     val context = LocalContext.current
     val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-    val tabs = listOf("欧本", "新影腾", "老影腾")
+    val tabs = listOf("欧本", "新影腾", "老影腾", "中兴")
     var selectedTabIndex by remember { mutableStateOf(0) }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -59,6 +59,7 @@ fun TabScreen() {
                 0 -> OubanConfig()
                 1 -> NewYingTengConfig()
                 2 -> OldYingTengConfig()
+                3 -> ZhongxingConfig()
             }
         }
 
@@ -181,6 +182,38 @@ fun OldYingTengConfig() {
                     switchSimHidden.value = it
                     sharedPreferences.edit {
                         putBoolean("oldYingTengSwitchSimHidden", it)
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun ZhongxingConfig() {
+    val context = LocalContext.current
+    val sharedPreferences = remember {
+        context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
+    }
+    var switchSimHidden = remember {
+        mutableStateOf(
+            sharedPreferences.getBoolean("zhongxingSwitchSimHidden", false)
+        )
+    }
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .padding(16.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "隐藏SIM开关", modifier = Modifier.weight(1f))
+            Switch(
+                checked = switchSimHidden.value,
+                onCheckedChange = {
+                    switchSimHidden.value = it
+                    sharedPreferences.edit {
+                        putBoolean("zhongxingSwitchSimHidden", it)
                     }
                 }
             )
