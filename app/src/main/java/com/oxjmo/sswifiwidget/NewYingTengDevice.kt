@@ -1,7 +1,7 @@
 package com.oxjmo.sswifiwidget
 
 import android.content.Context
-import android.view.View
+import android.util.Base64
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -9,11 +9,11 @@ import kotlinx.coroutines.launch
 import okhttp3.FormBody
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
 
 class NewYingTengDevice {
     private val networkClient = NetworkClient()
     private val hostUrl = "http://192.168.100.1"
+    private var properties = ""
 
     suspend fun onRefresh(
         context: Context,
@@ -27,6 +27,7 @@ class NewYingTengDevice {
         delay(timeMillis)
         try {
             login()
+            getProperties()
             val data = networkClient.requestJsonObject("$hostUrl/reqproc/proc_get?multi_data=1&cmd=battery_pers,lan_ipaddr,rssi,network_type&_=$timestamp")
             val ip = data.getString("lan_ipaddr")
             val rssi = data.getString("rssi")
@@ -50,7 +51,7 @@ class NewYingTengDevice {
         GlobalScope.launch(Dispatchers.IO) {
             try {
                 login()
-                val properties = networkClient.requestString("$hostUrl/i18n/Messages_zh-cn.properties")
+                getProperties()
                 val simCount = Regex("CARD").findAll(properties).count()
                 val data = networkClient.requestJsonObject("$hostUrl/reqproc/proc_get?cmd=alk_sim_select&_=$timestamp")
                 val currentSim = data.getString("alk_sim_select").toInt()
@@ -75,12 +76,17 @@ class NewYingTengDevice {
     }
 
     private fun login() {
+        val encodedBytes = Base64.encode("admin".toByteArray(), Base64.DEFAULT)
         val response = networkClient.requestJsonObject("$hostUrl/reqproc/proc_post", "POST", FormBody.Builder()
             .add("goformId", "LOGIN")
-            .add("password", "YWRtaW4=")
+            .add("password", String(encodedBytes))
             .build())
         if(response.getString("result") == "0") return
         throw Exception("登录失败")
+    }
+
+    private fun getProperties() {
+        if(properties == "") properties = networkClient.requestString("$hostUrl/i18n/Messages_zh-cn.properties")
     }
 
     private fun getBattery(level: String): String {
@@ -88,6 +94,7 @@ class NewYingTengDevice {
         if(level == "2") return "50"
         if(level == "3") return "70"
         if(level == "4") return "100"
+        if(level == "5" || level == "0") return "0"
         return "1"
     }
 

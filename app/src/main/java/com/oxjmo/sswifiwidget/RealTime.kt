@@ -20,6 +20,7 @@ class RealTime : AppWidgetProvider() {
     private val ouBenDevice = OuBenDevice()
     private val newYingTengDevice = NewYingTengDevice()
     private val oldYingTengDevice = OldYingTengDevice()
+    private val zhongxingDevice = ZhongxingDevice()
 
     companion object {
         const val ACTION_REFRESH = "com.oxjmo.sswifiwidget.REFRESH"
@@ -79,6 +80,15 @@ class RealTime : AppWidgetProvider() {
         }
         GlobalScope.launch {
             oldYingTengDevice.onRefresh(
+                context = context,
+                timeMillis = timeMillis,
+                setViewText = setViewText,
+                setViewVisibility = setViewVisibility,
+                updateAppWidget = {appWidgetManager.updateAppWidget(appWidgetId, views)}
+            )
+        }
+        GlobalScope.launch {
+            zhongxingDevice.onRefresh(
                 context = context,
                 timeMillis = timeMillis,
                 setViewText = setViewText,
