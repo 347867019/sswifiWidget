@@ -1,6 +1,6 @@
 package com.oxjmo.sswifiwidget
 
-import android.content.Context
+import android.content.SharedPreferences
 import android.util.Base64
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -16,13 +16,12 @@ class NewYingTengDevice {
     private var properties = ""
 
     suspend fun onRefresh(
-        context: Context,
         timeMillis: Long,
+        sharedPreferences: SharedPreferences,
         setViewText: (viewId: Int, charSequence: String) -> Unit,
         setViewVisibility: (viewId: Int, isVisible: Boolean) -> Unit,
         updateAppWidget: () -> Unit
     ) {
-        val sharedPreferences = context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
         val timestamp = System.currentTimeMillis()
         delay(timeMillis)
         try {

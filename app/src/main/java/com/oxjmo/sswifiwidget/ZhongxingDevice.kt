@@ -1,6 +1,6 @@
 package com.oxjmo.sswifiwidget
 
-import android.content.Context
+import android.content.SharedPreferences
 import kotlinx.coroutines.delay
 import okhttp3.FormBody
 import android.util.Base64
@@ -16,13 +16,12 @@ class ZhongxingDevice {
     private var properties = ""
 
     suspend fun onRefresh(
-        context: Context,
         timeMillis: Long,
+        sharedPreferences: SharedPreferences,
         setViewText: (viewId: Int, charSequence: String) -> Unit,
         setViewVisibility: (viewId: Int, isVisible: Boolean) -> Unit,
         updateAppWidget: () -> Unit
     ) {
-        val sharedPreferences = context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
         val timestamp = System.currentTimeMillis()
         delay(timeMillis)
         try {

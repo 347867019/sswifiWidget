@@ -1,7 +1,6 @@
 package com.oxjmo.sswifiwidget
 
-import android.content.Context
-import android.view.View
+import android.content.SharedPreferences
 import com.oxjmo.sswifiwidget.RealTime.SimInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -16,13 +15,12 @@ class OuBenDevice() {
     private val hostUrl = "http://192.168.1.1"
 
     suspend fun onRefresh(
-        context: Context,
         timeMillis: Long,
+        sharedPreferences: SharedPreferences,
         setViewText: (viewId: Int, charSequence: String) -> Unit,
         setViewVisibility: (viewId: Int, isVisible: Boolean) -> Unit,
         updateAppWidget: () -> Unit
     ) {
-        val sharedPreferences = context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
         val timestamp = System.currentTimeMillis()
         delay(timeMillis)
         try {

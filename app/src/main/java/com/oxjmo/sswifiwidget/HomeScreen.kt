@@ -1,8 +1,10 @@
 package com.oxjmo.sswifiwidget
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,6 +28,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
@@ -38,22 +41,31 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
-
+import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
     val context = LocalContext.current
+    val sharedPreferences = remember {
+        context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
+    }
     val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
     val tabs = listOf("欧本", "新影腾", "老影腾", "中兴")
     var selectedTabIndex by remember { mutableStateOf(0) }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    var widgetFontSize by remember {
+        mutableStateOf(sharedPreferences.getString("widgetFontSize", "小") ?: "")
+    }
+    var showFontSizeDialog by remember { mutableStateOf(false) }
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -61,6 +73,22 @@ fun HomeScreen(navController: NavController) {
                 modifier = Modifier.width(240.dp) // 控制宽度
             ) {
                 Column {
+                    NavigationDrawerItem(
+                        label = {
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                Text(text = "控件字体大小")
+                                Text(
+                                    text = widgetFontSize,
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.End
+                                )
+                            }
+                        },
+                        selected = false,
+                        onClick = {
+                            showFontSizeDialog = true
+                        }
+                    )
                     NavigationDrawerItem(
                         label = { Text("帮助") },
                         selected = false,
@@ -121,10 +149,10 @@ fun HomeScreen(navController: NavController) {
                                 .fillMaxWidth()
                         ) {
                             when (selectedTabIndex) {
-                                0 -> OubanConfig(navController)
-                                1 -> NewYingTengConfig(navController)
-                                2 -> OldYingTengConfig(navController)
-                                3 -> ZhongxingConfig(navController)
+                                0 -> OubanConfig(navController, sharedPreferences)
+                                1 -> NewYingTengConfig(navController, sharedPreferences)
+                                2 -> OldYingTengConfig(navController, sharedPreferences)
+                                3 -> ZhongxingConfig(navController, sharedPreferences)
                             }
                         }
 
@@ -139,14 +167,38 @@ fun HomeScreen(navController: NavController) {
             )
         }
     )
+    if (showFontSizeDialog) {
+        AlertDialog(
+            onDismissRequest = { showFontSizeDialog = false },
+            title = { Text("选择字体大小") },
+            text = {
+                Column {
+                    listOf("小", "中", "大").forEach { size ->
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    widgetFontSize = size
+                                    showFontSizeDialog = false
+                                    sharedPreferences.edit {
+                                        putString("widgetFontSize", size)
+                                    }
+                                }
+                                .padding(16.dp)
+                        ) {
+                            Text(text = size)
+                        }
+                    }
+                }
+            },
+            confirmButton = {}
+        )
+    }
 }
 
 @Composable
-fun OubanConfig(navController: NavController) {
-    val context = LocalContext.current
-    val sharedPreferences = remember {
-        context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
-    }
+fun OubanConfig(navController: NavController, sharedPreferences: SharedPreferences) {
     var accountId by remember {
         mutableStateOf(sharedPreferences.getString("oubenAccountId", "") ?: "")
     }
@@ -193,11 +245,7 @@ fun OubanConfig(navController: NavController) {
 }
 
 @Composable
-fun NewYingTengConfig(navController: NavController) {
-    val context = LocalContext.current
-    val sharedPreferences = remember {
-        context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
-    }
+fun NewYingTengConfig(navController: NavController, sharedPreferences: SharedPreferences) {
     var switchSimHidden = remember {
         mutableStateOf(sharedPreferences.getBoolean("newYingTengSwitchSimHidden", false))
     }
@@ -258,11 +306,7 @@ fun NewYingTengConfig(navController: NavController) {
 }
 
 @Composable
-fun OldYingTengConfig(navController: NavController) {
-    val context = LocalContext.current
-    val sharedPreferences = remember {
-        context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
-    }
+fun OldYingTengConfig(navController: NavController, sharedPreferences: SharedPreferences) {
     var switchSimHidden = remember {
         mutableStateOf(sharedPreferences.getBoolean("oldYingTengSwitchSimHidden", false))
     }
@@ -288,11 +332,7 @@ fun OldYingTengConfig(navController: NavController) {
 }
 
 @Composable
-fun ZhongxingConfig(navController: NavController) {
-    val context = LocalContext.current
-    val sharedPreferences = remember {
-        context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
-    }
+fun ZhongxingConfig(navController: NavController, sharedPreferences: SharedPreferences) {
     var switchSimHidden = remember {
         mutableStateOf(sharedPreferences.getBoolean("zhongXingSwitchSimHidden", false))
     }

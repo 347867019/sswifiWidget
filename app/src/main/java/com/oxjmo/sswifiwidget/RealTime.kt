@@ -44,6 +44,7 @@ class RealTime : AppWidgetProvider() {
         timeMillis: Long
     ) {
         Toast.makeText(context, "等待刷新", Toast.LENGTH_SHORT).show()
+        val sharedPreferences = context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
         val views = RemoteViews(context.packageName, R.layout.real_time)
         val textViews = listOf(R.id.ip, R.id.rssi, R.id.electricQuantity, R.id.provider, R.id.networkMode, R.id.utilizableFlow)
         for (viewId in textViews) {
@@ -62,8 +63,8 @@ class RealTime : AppWidgetProvider() {
 
         GlobalScope.launch {
             ouBenDevice.onRefresh(
-                context = context,
                 timeMillis = timeMillis,
+                sharedPreferences = sharedPreferences,
                 setViewText = setViewText,
                 setViewVisibility = setViewVisibility,
                 updateAppWidget = {appWidgetManager.updateAppWidget(appWidgetId, views)}
@@ -71,8 +72,8 @@ class RealTime : AppWidgetProvider() {
         }
         GlobalScope.launch {
             newYingTengDevice.onRefresh(
-                context = context,
                 timeMillis = timeMillis,
+                sharedPreferences = sharedPreferences,
                 setViewText = setViewText,
                 setViewVisibility = setViewVisibility,
                 updateAppWidget = {appWidgetManager.updateAppWidget(appWidgetId, views)}
@@ -80,8 +81,8 @@ class RealTime : AppWidgetProvider() {
         }
         GlobalScope.launch {
             oldYingTengDevice.onRefresh(
-                context = context,
                 timeMillis = timeMillis,
+                sharedPreferences = sharedPreferences,
                 setViewText = setViewText,
                 setViewVisibility = setViewVisibility,
                 updateAppWidget = {appWidgetManager.updateAppWidget(appWidgetId, views)}
@@ -89,8 +90,8 @@ class RealTime : AppWidgetProvider() {
         }
         GlobalScope.launch {
             zhongxingDevice.onRefresh(
-                context = context,
                 timeMillis = timeMillis,
+                sharedPreferences = sharedPreferences,
                 setViewText = setViewText,
                 setViewVisibility = setViewVisibility,
                 updateAppWidget = {appWidgetManager.updateAppWidget(appWidgetId, views)}

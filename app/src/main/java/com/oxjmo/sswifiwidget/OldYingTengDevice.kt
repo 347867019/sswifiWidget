@@ -1,8 +1,6 @@
 package com.oxjmo.sswifiwidget
 
-import android.content.Context
-import android.util.Log
-import android.view.View
+import android.content.SharedPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -11,8 +9,6 @@ import okhttp3.Headers
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.xmlpull.v1.XmlPullParserFactory
-import java.io.StringReader
 import java.security.MessageDigest
 import kotlin.random.Random
 
@@ -22,13 +18,12 @@ class OldYingTengDevice {
 
     private var loginParamString = ""
     suspend fun onRefresh(
-        context: Context,
         timeMillis: Long,
+        sharedPreferences: SharedPreferences,
         setViewText: (viewId: Int, charSequence: String) -> Unit,
         setViewVisibility: (viewId: Int, charSequence: Boolean) -> Unit,
         updateAppWidget: () -> Unit
     ) {
-        val sharedPreferences = context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
         delay(timeMillis)
         try {
             login()
