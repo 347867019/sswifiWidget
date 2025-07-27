@@ -87,7 +87,7 @@ fun HomeScreen(navController: NavController) {
                         title = { Text("WiFi 小控件") },
                         actions = {
                             IconButton(onClick = {
-                                Toast.makeText(context, "请返回桌面添加安卓小控件", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "请长按桌面 → 小部件 → 找到【随时wifi控件】→ 添加小部件", Toast.LENGTH_SHORT).show()
                             }) {
                                 Icon(Icons.Default.Info, contentDescription = "更多")
                             }
@@ -231,8 +231,9 @@ fun NewYingTengConfig(navController: NavController) {
                         {
                             const style = document.createElement("style")
                             style.innerHTML = `
-                                .type_items a {display: table-cell!important;}
-                                .nav_right ul li {display: block!important;}
+                                .type_items a {display: table-cell!important}
+                                .nav_right ul li {display: block!important}
+                                .traffic_control_container {display: inline!important}
                             `
                             document.body.appendChild(style)
                             setTimeout(_ => {
@@ -312,6 +313,41 @@ fun ZhongxingConfig(navController: NavController) {
                     }
                 }
             )
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "全功能后台", modifier = Modifier.weight(1f))
+            Button(
+                onClick = {
+                    val encodedUrl = Uri.encode("http://192.168.0.1/index.html")
+                    val enCodeScript = Uri.encode("""
+                        {
+                            const style = document.createElement("style")
+                            style.innerHTML = `
+                                .type_items ul li {display: inline !important}
+                                .nav_right ul li {display: inline!important}
+                                .traffic_control_container {display: inline!important}
+                            `
+                            document.body.appendChild(style)
+                            setTimeout(_ => {
+                                if(document.getElementById("frmLogin")) {
+                                    const inputElement = document.getElementById('txtPwd');
+                                    inputElement.value = 'admin';
+                                    const keypressevent = new Event('keypress', {bubbles: true,cancelable: true});
+                                    inputElement.dispatchEvent(keypressevent);
+                                    document.getElementById('btnLogin')?.click()
+                                }
+                            }, 500)
+                        }
+                    """.trimIndent())
+                    navController.navigate("webview?url=$encodedUrl&script=$enCodeScript")
+                },
+                modifier = Modifier
+            ) {
+                Text(text = "查看")
+            }
         }
     }
 }
