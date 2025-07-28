@@ -1,5 +1,7 @@
 package com.oxjmo.sswifiwidget
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
@@ -52,6 +54,10 @@ import androidx.compose.foundation.clickable
 @Composable
 fun HomeScreen(navController: NavController) {
     val context = LocalContext.current
+    val appWidgetManager = AppWidgetManager.getInstance(context)
+    val appWidgetClass = RealTime::class.java
+    val appWidgetIds = appWidgetManager.getAppWidgetIds(ComponentName(context, appWidgetClass))
+
     val sharedPreferences = remember {
         context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
     }
@@ -65,7 +71,11 @@ fun HomeScreen(navController: NavController) {
     var widgetFontSize by remember {
         mutableStateOf(sharedPreferences.getString("widgetFontSize", "小") ?: "")
     }
-    var showFontSizeDialog by remember { mutableStateOf(false) }
+    var widgetOrientation by remember {
+        mutableStateOf(sharedPreferences.getString("widgetOrientation", "纵向") ?: "")
+    }
+    var showEditFontSizeDialog by remember { mutableStateOf(false) }
+    var showEditOrientationDialog by remember { mutableStateOf(false) }
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -86,7 +96,23 @@ fun HomeScreen(navController: NavController) {
                         },
                         selected = false,
                         onClick = {
-                            showFontSizeDialog = true
+                            showEditFontSizeDialog = true
+                        }
+                    )
+                    NavigationDrawerItem(
+                        label = {
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                Text(text = "控件方向")
+                                Text(
+                                    text = widgetOrientation,
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.End
+                                )
+                            }
+                        },
+                        selected = false,
+                        onClick = {
+                            showEditOrientationDialog = true
                         }
                     )
                     NavigationDrawerItem(
@@ -167,9 +193,9 @@ fun HomeScreen(navController: NavController) {
             )
         }
     )
-    if (showFontSizeDialog) {
+    if (showEditFontSizeDialog) {
         AlertDialog(
-            onDismissRequest = { showFontSizeDialog = false },
+            onDismissRequest = { showEditFontSizeDialog = false },
             title = { Text("选择字体大小") },
             text = {
                 Column {
@@ -180,10 +206,40 @@ fun HomeScreen(navController: NavController) {
                                 .fillMaxWidth()
                                 .clickable {
                                     widgetFontSize = size
-                                    showFontSizeDialog = false
+                                    showEditFontSizeDialog = false
                                     sharedPreferences.edit {
                                         putString("widgetFontSize", size)
                                     }
+                                    RealTime().onUpdate(context, appWidgetManager, appWidgetIds)
+                                }
+                                .padding(16.dp)
+                        ) {
+                            Text(text = size)
+                        }
+                    }
+                }
+            },
+            confirmButton = {}
+        )
+    }
+    if (showEditOrientationDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditOrientationDialog = false },
+            title = { Text("选择控件方向") },
+            text = {
+                Column {
+                    listOf("纵向", "横向").forEach { size ->
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    widgetOrientation = size
+                                    showEditOrientationDialog = false
+                                    sharedPreferences.edit {
+                                        putString("widgetOrientation", size)
+                                    }
+                                    RealTime().onUpdate(context, appWidgetManager, appWidgetIds)
                                 }
                                 .padding(16.dp)
                         ) {

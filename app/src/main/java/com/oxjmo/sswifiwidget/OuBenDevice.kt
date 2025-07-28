@@ -1,7 +1,6 @@
 package com.oxjmo.sswifiwidget
 
 import android.content.SharedPreferences
-import com.oxjmo.sswifiwidget.RealTime.SimInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -51,6 +50,11 @@ class OuBenDevice() {
             updateAppWidget()
         }catch (_: Exception) {}
     }
+
+    data class SimInfo(
+        val simId: String,
+        val simImsi: String
+    )
 
     fun onSwitchSim(
         callback: () -> Unit

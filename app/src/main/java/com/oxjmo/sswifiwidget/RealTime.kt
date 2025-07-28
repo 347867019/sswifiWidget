@@ -8,6 +8,7 @@ import android.widget.RemoteViews
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import android.util.TypedValue
 import android.view.View
 import android.widget.Toast
 import kotlinx.coroutines.GlobalScope
@@ -45,10 +46,19 @@ class RealTime : AppWidgetProvider() {
     ) {
         Toast.makeText(context, "等待刷新", Toast.LENGTH_SHORT).show()
         val sharedPreferences = context.getSharedPreferences("com.oxjmo.sswifiwidget.storage", Context.MODE_PRIVATE)
-        val views = RemoteViews(context.packageName, R.layout.real_time)
-        val textViews = listOf(R.id.ip, R.id.rssi, R.id.electricQuantity, R.id.provider, R.id.networkMode, R.id.utilizableFlow)
-        for (viewId in textViews) {
+        val views = (
+            if(sharedPreferences.getString("widgetOrientation", "纵向").toString() == "纵向")
+                RemoteViews(context.packageName, R.layout.real_time_vertical)
+            else
+                RemoteViews(context.packageName, R.layout.real_time_horizontal)
+        )
+        val labelViews = listOf(R.id.ip_label, R.id.rssi_label, R.id.electricQuantity_label, R.id.provider_label, R.id.networkMode_label, R.id.utilizableFlow_label)
+        val valueViews = listOf(R.id.ip, R.id.rssi, R.id.electricQuantity, R.id.provider, R.id.networkMode, R.id.utilizableFlow)
+        for (viewId in valueViews) {
             views.setTextViewText(viewId, "--")
+        }
+        for (viewId in (labelViews + valueViews)) {
+            views.setTextViewTextSize(viewId, TypedValue.COMPLEX_UNIT_SP, getFontSize(sharedPreferences.getString("widgetFontSize", "小").toString()))
         }
         views.setOnClickPendingIntent(R.id.refresh, registerRefreshEvent(context, appWidgetId))
         views.setOnClickPendingIntent(R.id.switchSIM, registerSwitchSIMEvent(context, appWidgetId))
@@ -97,13 +107,13 @@ class RealTime : AppWidgetProvider() {
                 updateAppWidget = {appWidgetManager.updateAppWidget(appWidgetId, views)}
             )
         }
-
     }
 
-    data class SimInfo(
-        val simId: String,
-        val simImsi: String
-    )
+    private fun getFontSize(size: String): Float {
+        if(size == "大") return 13f
+        if(size == "中") return 12f
+        return 10f
+    }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
