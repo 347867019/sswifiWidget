@@ -40,7 +40,7 @@ class OuBenDevice() {
 
             val oubenAccountId = sharedPreferences.getString("oubenAccountId", "")
             println(oubenAccountId)
-            val flowInfo = networkClient.requestJsonObject("http://wifi.ruijiadashop.cn/api/Card/loginCard", "POST", JSONObject().apply {
+            val flowInfo = networkClient.requestJsonObject("http://wifi2.ruijiadashop.cn/api/Card/loginCard", "POST", JSONObject().apply {
                 put("dev_no", oubenAccountId)
             }.toString().toRequestBody("application/json".toMediaType()))
             val data = flowInfo.getJSONObject("data")
