@@ -6,10 +6,12 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.widget.RemoteViews
 import android.content.Intent
+import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
 import android.util.TypedValue
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.Toast
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -52,6 +54,11 @@ class RealTime : AppWidgetProvider() {
             else
                 RemoteViews(context.packageName, R.layout.real_time_horizontal)
         )
+        if(sharedPreferences.getString("translucent", "否").toString() == "否")
+            views.setInt(R.id.layout, "setBackgroundResource", R.drawable.bg_widget_container)
+        else
+            views.setInt(R.id.layout, "setBackgroundResource", R.drawable.bg_widget_container_translucent)
+
         val labelViews = listOf(R.id.ip_label, R.id.rssi_label, R.id.electricQuantity_label, R.id.provider_label, R.id.networkMode_label, R.id.utilizableFlow_label)
         val valueViews = listOf(R.id.ip, R.id.rssi, R.id.electricQuantity, R.id.provider, R.id.networkMode, R.id.utilizableFlow)
         for (viewId in valueViews) {

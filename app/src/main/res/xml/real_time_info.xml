@@ -9,4 +9,5 @@
     android:previewLayout="@layout/real_time_vertical"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="86400000"
+    android:background="#00000000"
     android:widgetCategory="home_screen" />

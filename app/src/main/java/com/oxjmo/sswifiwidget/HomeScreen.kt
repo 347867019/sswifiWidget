@@ -74,8 +74,12 @@ fun HomeScreen(navController: NavController) {
     var widgetOrientation by remember {
         mutableStateOf(sharedPreferences.getString("widgetOrientation", "纵向") ?: "")
     }
+    var translucent by remember {
+        mutableStateOf(sharedPreferences.getString("translucent", "否") ?: "")
+    }
     var showEditFontSizeDialog by remember { mutableStateOf(false) }
     var showEditOrientationDialog by remember { mutableStateOf(false) }
+    var showEditTranslucentDialog by remember { mutableStateOf(false) }
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -113,6 +117,22 @@ fun HomeScreen(navController: NavController) {
                         selected = false,
                         onClick = {
                             showEditOrientationDialog = true
+                        }
+                    )
+                    NavigationDrawerItem(
+                        label = {
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                Text(text = "开启半透明")
+                                Text(
+                                    text = translucent,
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.End
+                                )
+                            }
+                        },
+                        selected = false,
+                        onClick = {
+                            showEditTranslucentDialog = true
                         }
                     )
                     NavigationDrawerItem(
@@ -199,22 +219,22 @@ fun HomeScreen(navController: NavController) {
             title = { Text("选择字体大小") },
             text = {
                 Column {
-                    listOf("小", "中", "大").forEach { size ->
+                    listOf("小", "中", "大").forEach { value ->
                         Row(
                             horizontalArrangement = Arrangement.Center,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    widgetFontSize = size
+                                    widgetFontSize = value
                                     showEditFontSizeDialog = false
                                     sharedPreferences.edit {
-                                        putString("widgetFontSize", size)
+                                        putString("widgetFontSize", value)
                                     }
                                     RealTime().onUpdate(context, appWidgetManager, appWidgetIds)
                                 }
                                 .padding(16.dp)
                         ) {
-                            Text(text = size)
+                            Text(text = value)
                         }
                     }
                 }
@@ -228,22 +248,51 @@ fun HomeScreen(navController: NavController) {
             title = { Text("选择控件方向") },
             text = {
                 Column {
-                    listOf("纵向", "横向").forEach { size ->
+                    listOf("纵向", "横向").forEach { value ->
                         Row(
                             horizontalArrangement = Arrangement.Center,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    widgetOrientation = size
+                                    widgetOrientation = value
                                     showEditOrientationDialog = false
                                     sharedPreferences.edit {
-                                        putString("widgetOrientation", size)
+                                        putString("widgetOrientation", value)
                                     }
                                     RealTime().onUpdate(context, appWidgetManager, appWidgetIds)
                                 }
                                 .padding(16.dp)
                         ) {
-                            Text(text = size)
+                            Text(text = value)
+                        }
+                    }
+                }
+            },
+            confirmButton = {}
+        )
+    }
+    if (showEditTranslucentDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditTranslucentDialog = false },
+            title = { Text("选择是否半透明") },
+            text = {
+                Column {
+                    listOf("否", "是").forEach { value ->
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    translucent = value
+                                    showEditTranslucentDialog = false
+                                    sharedPreferences.edit {
+                                        putString("translucent", value)
+                                    }
+                                    RealTime().onUpdate(context, appWidgetManager, appWidgetIds)
+                                }
+                                .padding(16.dp)
+                        ) {
+                            Text(text = value)
                         }
                     }
                 }
