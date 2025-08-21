@@ -277,7 +277,7 @@ fun HomeScreen(navController: NavController) {
             title = { Text("选择是否半透明") },
             text = {
                 Column {
-                    listOf("否", "是").forEach { value ->
+                    listOf("否", "10%", "30%", "50%", "75%", "90%").forEach { value ->
                         Row(
                             horizontalArrangement = Arrangement.Center,
                             modifier = Modifier
