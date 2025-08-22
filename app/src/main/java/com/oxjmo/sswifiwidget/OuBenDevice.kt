@@ -40,14 +40,20 @@ class OuBenDevice() {
 
             val oubenAccountId = sharedPreferences.getString("oubenAccountId", "")
             println(oubenAccountId)
-            val flowInfo = networkClient.requestJsonObject("http://wifi2.ruijiadashop.cn/api/Card/loginCard", "POST", JSONObject().apply {
-                put("dev_no", oubenAccountId)
-            }.toString().toRequestBody("application/json".toMediaType()))
-            val data = flowInfo.getJSONObject("data")
-            val remainAmount = data.getString("remainAmount")
-            val utilizableFlow = String.format("%.0fGB", remainAmount.toDouble() / 1024)
-            setViewText(R.id.utilizableFlow, utilizableFlow)
-            updateAppWidget()
+            val urls = (1..10).map { "http://wifi${it}.ruijiadashop.cn/api/Card/loginCard" }
+            urls.find { url ->
+                try {
+                    val flowInfo = networkClient.requestJsonObject(url, "POST", JSONObject().apply {
+                        put("dev_no", oubenAccountId)
+                    }.toString().toRequestBody("application/json".toMediaType()))
+                    val data = flowInfo.getJSONObject("data")
+                    val remainAmount = data.getString("remainAmount")
+                    val utilizableFlow = String.format("%.0fGB", remainAmount.toDouble() / 1024)
+                    setViewText(R.id.utilizableFlow, utilizableFlow)
+                    updateAppWidget()
+                    true
+                }catch (_: Exception) {false}
+            }
         }catch (_: Exception) {}
     }
 
