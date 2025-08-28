@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,6 +50,7 @@ import androidx.core.content.edit
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.MaterialTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,11 +65,11 @@ fun HomeScreen(navController: NavController) {
     }
     val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
     val tabs = listOf("欧本", "新影腾", "老影腾", "中兴")
-    var selectedTabIndex by remember { mutableStateOf(0) }
-
+    var selectedTabIndex by remember {
+        mutableStateOf(sharedPreferences.getInt("selectedTabIndex", 0))
+    }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-
     var widgetFontSize by remember {
         mutableStateOf(sharedPreferences.getString("widgetFontSize", "小") ?: "")
     }
@@ -77,9 +79,13 @@ fun HomeScreen(navController: NavController) {
     var translucent by remember {
         mutableStateOf(sharedPreferences.getString("translucent", "否") ?: "")
     }
+    var visibleDraggingDeviceStatus by remember {
+        mutableStateOf(sharedPreferences.getString("visibleDraggingDeviceStatus", "隐藏") ?: "隐藏")
+    }
     var showEditFontSizeDialog by remember { mutableStateOf(false) }
     var showEditOrientationDialog by remember { mutableStateOf(false) }
     var showEditTranslucentDialog by remember { mutableStateOf(false) }
+    var showEditVisibleDraggingDeviceStatus by remember { mutableStateOf(false) }
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -122,7 +128,7 @@ fun HomeScreen(navController: NavController) {
                     NavigationDrawerItem(
                         label = {
                             Row(modifier = Modifier.fillMaxWidth()) {
-                                Text(text = "开启半透明")
+                                Text(text = "透明度")
                                 Text(
                                     text = translucent,
                                     modifier = Modifier.weight(1f),
@@ -133,6 +139,22 @@ fun HomeScreen(navController: NavController) {
                         selected = false,
                         onClick = {
                             showEditTranslucentDialog = true
+                        }
+                    )
+                    NavigationDrawerItem(
+                        label = {
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                Text(text = "拖拽设备状态")
+                                Text(
+                                    text = visibleDraggingDeviceStatus,
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.End
+                                )
+                            }
+                        },
+                        selected = false,
+                        onClick = {
+                            showEditVisibleDraggingDeviceStatus = true
                         }
                     )
                     NavigationDrawerItem(
@@ -178,13 +200,19 @@ fun HomeScreen(navController: NavController) {
                 content = { padding ->
                     Column(modifier = Modifier
                         .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
                         .padding(padding)) {
                         TabRow(selectedTabIndex = selectedTabIndex, tabs = {
                             tabs.forEachIndexed { index, title ->
                                 Tab(
                                     text = { Text(title) },
                                     selected = selectedTabIndex == index,
-                                    onClick = { selectedTabIndex = index }
+                                    onClick = {
+                                        selectedTabIndex = index
+                                        sharedPreferences.edit {
+                                            putInt("selectedTabIndex", index)
+                                        }
+                                    }
                                 )
                             }
                         })
@@ -202,6 +230,7 @@ fun HomeScreen(navController: NavController) {
                             }
                         }
 
+                        if(visibleDraggingDeviceStatus == "显示") {DeviceStatus(sharedPreferences)}
                         Text(
                             text = "version：${pInfo.versionName}",
                             modifier = Modifier
@@ -274,7 +303,7 @@ fun HomeScreen(navController: NavController) {
     if (showEditTranslucentDialog) {
         AlertDialog(
             onDismissRequest = { showEditTranslucentDialog = false },
-            title = { Text("选择是否半透明") },
+            title = { Text("选择透明度") },
             text = {
                 Column {
                     listOf("否", "10%", "30%", "50%", "75%", "90%").forEach { value ->
@@ -289,6 +318,34 @@ fun HomeScreen(navController: NavController) {
                                         putString("translucent", value)
                                     }
                                     RealTime().onUpdate(context, appWidgetManager, appWidgetIds)
+                                }
+                                .padding(16.dp)
+                        ) {
+                            Text(text = value)
+                        }
+                    }
+                }
+            },
+            confirmButton = {}
+        )
+    }
+    if (showEditVisibleDraggingDeviceStatus) {
+        AlertDialog(
+            onDismissRequest = { showEditVisibleDraggingDeviceStatus = false },
+            title = { Text("选择是否显示拖拽设备状态") },
+            text = {
+                Column {
+                    listOf("显示", "隐藏").forEach { value ->
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    visibleDraggingDeviceStatus = value
+                                    showEditVisibleDraggingDeviceStatus = false
+                                    sharedPreferences.edit {
+                                        putString("visibleDraggingDeviceStatus", value)
+                                    }
                                 }
                                 .padding(16.dp)
                         ) {
@@ -319,7 +376,7 @@ fun OubanConfig(navController: NavController, sharedPreferences: SharedPreferenc
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(text = "账号ID", modifier = Modifier.weight(1f))
+            Text(text = "充值号", modifier = Modifier.weight(1f))
             TextField(
                 value = accountId,
                 onValueChange = {
