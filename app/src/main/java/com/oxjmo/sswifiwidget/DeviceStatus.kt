@@ -21,6 +21,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -60,7 +62,7 @@ fun DeviceStatus(sharedPreferences: SharedPreferences) {
         networkMode = "--"
         utilizableFlow = "--"
         try {
-            withContext(Dispatchers.IO) {
+            GlobalScope.launch {
                 ouBenDevice.onRefresh(
                     timeMillis = 200L,
                     sharedPreferences = sharedPreferences,
@@ -68,6 +70,8 @@ fun DeviceStatus(sharedPreferences: SharedPreferences) {
                     setViewVisibility = setViewVisibility,
                     updateAppWidget = updateAppWidget
                 )
+            }
+            GlobalScope.launch {
                 newYingTengDevice.onRefresh(
                     timeMillis = 200L,
                     sharedPreferences = sharedPreferences,
@@ -75,6 +79,8 @@ fun DeviceStatus(sharedPreferences: SharedPreferences) {
                     setViewVisibility = setViewVisibility,
                     updateAppWidget = updateAppWidget
                 )
+            }
+            GlobalScope.launch  {
                 oldYingTengDevice.onRefresh(
                     timeMillis = 200L,
                     sharedPreferences = sharedPreferences,
@@ -82,6 +88,8 @@ fun DeviceStatus(sharedPreferences: SharedPreferences) {
                     setViewVisibility = setViewVisibility,
                     updateAppWidget = updateAppWidget
                 )
+            }
+            GlobalScope.launch  {
                 zhongxingDevice.onRefresh(
                     timeMillis = 200L,
                     sharedPreferences = sharedPreferences,
@@ -90,11 +98,7 @@ fun DeviceStatus(sharedPreferences: SharedPreferences) {
                     updateAppWidget = updateAppWidget
                 )
             }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        } catch (_: Exception) {}
     }
     LaunchedEffect(switchTrigger) {
         try {
@@ -123,7 +127,7 @@ fun DeviceStatus(sharedPreferences: SharedPreferences) {
                 Text("模式: $networkMode", style = MaterialTheme.typography.titleMedium)
                 Text("剩余流量: $utilizableFlow", style = MaterialTheme.typography.titleMedium)
             }
-            Column(modifier = Modifier.fillMaxWidth(0.5f)) {
+            Column(modifier = Modifier.fillMaxWidth(0.6f)) {
                 Button(onClick = { refreshTrigger++ }, modifier = Modifier.fillMaxWidth()) {
                     Text("刷新")
                 }
