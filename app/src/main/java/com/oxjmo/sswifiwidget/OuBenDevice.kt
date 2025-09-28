@@ -40,7 +40,7 @@ class OuBenDevice() {
 
             val oubenAccountId = sharedPreferences.getString("oubenAccountId", "")
             println(oubenAccountId)
-            val urls = listOf("http://user.ruijiadashop.cn/api/Card/loginCard") + (1..10).map { "http://wifi${it}.ruijiadashop.cn/api/Card/loginCard" }
+            val urls = listOf("http://wx.ruijiadashop.cn/api/Card/loginCard") + listOf("http://user.ruijiadashop.cn/api/Card/loginCard") + (1..10).map { "http://wifi${it}.ruijiadashop.cn/api/Card/loginCard" }
             urls.find { url ->
                 try {
                     val flowInfo = networkClient.requestJsonObject(url, "POST", JSONObject().apply {
